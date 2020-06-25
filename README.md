@@ -30,7 +30,7 @@ The number of labels to apply `mode` to
 name: Pull Request Labels
 on:
   pull_request:
-    types: [labeled, unlabeled]
+    types: [opened, labeled, unlabeled, synchronize]
 jobs:
   label:
     runs-on: ubuntu-latest
