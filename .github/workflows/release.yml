@@ -1,0 +1,14 @@
+name: Auto-Compile
+on: 
+  release:
+    types: [published, edited]
+jobs:
+  compile:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Automatically build action
+        uses: mheap/github-action-auto-compile-node@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
