@@ -27,9 +27,16 @@ Toolkit.run(async (tools) => {
     return;
   }
 
-  const appliedLabels = tools.context.payload.pull_request.labels.map(
-    (label) => label.name
-  );
+  // If a token is provided, call the API, otherwise read the event.json file
+  let labels;
+  if (process.env.GITHUB_TOKEN) {
+    labels = (await tools.github.issues.listLabelsOnIssue(tools.context.issue))
+      .data;
+  } else {
+    labels = tools.context.payload.pull_request.labels;
+  }
+
+  const appliedLabels = labels.map((label) => label.name);
 
   let intersection = allowedLabels.filter((x) => appliedLabels.includes(x));
 

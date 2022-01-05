@@ -42,6 +42,19 @@ jobs:
           labels: "semver:patch, semver:minor, semver:major"
 ```
 
+By default this actions reads `event.json`, which will not detect when a label is added in an earlier step.
+To force an API call, set the `GITHUB_TOKEN` environment variable like so:
+
+```yaml
+- uses: mheap/github-action-required-labels@v1
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  with:
+    mode: exactly
+    count: 1
+    labels: "semver:patch, semver:minor, semver:major"
+```
+
 ### Prevent merging if a label exists
 
 ```yaml
