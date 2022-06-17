@@ -1,8 +1,8 @@
 name: Require Labels
 description: Require labels to be added to a pull request before merging
 runs:
-  using: docker
-  image: Dockerfile
+  using: node16
+  main: dist/index.js
 branding:
   icon: check-square
   color: blue
