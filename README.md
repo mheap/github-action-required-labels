@@ -74,3 +74,14 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
     count: 2
     labels: "community-reviewed, team-reviewed, codeowner-reviewed"
 ```
+
+### Exit with a neutral result rather than failure
+
+```yaml
+- uses: mheap/github-action-required-labels@v1
+  with:
+    mode: minimum
+    count: 2
+    labels: "community-reviewed, team-reviewed, codeowner-reviewed"
+    exit_type: neutral # Can be: failure, neutral or success
+```

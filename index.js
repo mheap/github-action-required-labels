@@ -9,6 +9,8 @@ Toolkit.run(async (tools) => {
     .map((l) => l.trim())
     .filter((r) => r);
 
+  const exitType = tools.inputs.exit_type || "failure";
+
   // Validate inputs
   if (tools.inputs.count === "") {
     tools.exit.failure(`[count] input is not provided`);
@@ -28,6 +30,16 @@ Toolkit.run(async (tools) => {
     return;
   }
 
+  const allowedExitCodes = ["success", "neutral", "failure"];
+  if (!allowedExitCodes.includes(exitType)) {
+    tools.exit.failure(
+      `Unknown exit_code input [${exitType}]. Must be one of: ${allowedExitCodes.join(
+        ", "
+      )}`
+    );
+    return;
+  }
+
   // If a token is provided, call the API, otherwise read the event.json file
   let labels;
   if (process.env.GITHUB_TOKEN) {
@@ -43,7 +55,7 @@ Toolkit.run(async (tools) => {
   let intersection = allowedLabels.filter((x) => appliedLabels.includes(x));
 
   if (mode === "exactly" && intersection.length !== count) {
-    tools.exit.failure(
+    tools.exit[exitType](
       `Label error. Requires exactly ${count} of: ${allowedLabels.join(
         ", "
       )}. Found: ${appliedLabels.join(", ")}`
@@ -52,7 +64,7 @@ Toolkit.run(async (tools) => {
   }
 
   if (mode === "minimum" && intersection.length < count) {
-    tools.exit.failure(
+    tools.exit[exitType](
       `Label error. Requires at least ${count} of: ${allowedLabels.join(
         ", "
       )}. Found: ${appliedLabels.join(", ")}`
@@ -61,7 +73,7 @@ Toolkit.run(async (tools) => {
   }
 
   if (mode === "maximum" && intersection.length > count) {
-    tools.exit.failure(
+    tools.exit[exitType](
       `Label error. Requires at most ${count} of: ${allowedLabels.join(
         ", "
       )}. Found: ${appliedLabels.join(", ")}`
