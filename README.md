@@ -35,7 +35,7 @@ jobs:
   label:
     runs-on: ubuntu-latest
     steps:
-      - uses: mheap/github-action-required-labels@v1
+      - uses: mheap/github-action-required-labels@v2
         with:
           mode: exactly
           count: 1
@@ -46,7 +46,7 @@ By default this actions reads `event.json`, which will not detect when a label i
 To force an API call, set the `GITHUB_TOKEN` environment variable like so:
 
 ```yaml
-- uses: mheap/github-action-required-labels@v1
+- uses: mheap/github-action-required-labels@v2
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
@@ -58,7 +58,7 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
 ### Prevent merging if a label exists
 
 ```yaml
-- uses: mheap/github-action-required-labels@v1
+- uses: mheap/github-action-required-labels@v2
   with:
     mode: exactly
     count: 0
@@ -68,7 +68,7 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
 ### Require multiple labels
 
 ```yaml
-- uses: mheap/github-action-required-labels@v1
+- uses: mheap/github-action-required-labels@v2
   with:
     mode: minimum
     count: 2
@@ -78,7 +78,7 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
 ### Exit with a neutral result rather than failure
 
 ```yaml
-- uses: mheap/github-action-required-labels@v1
+- uses: mheap/github-action-required-labels@v2
   with:
     mode: minimum
     count: 2
