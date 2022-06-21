@@ -5,13 +5,17 @@
   "scripts": {
     "start": "node ./index.js",
     "test": "jest",
-    "build": "npx @vercel/ncc build && npx convert-action"
+    "build": "npx @vercel/ncc build && npx convert-action",
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write ."
   },
   "dependencies": {
-    "actions-toolkit": "^5.0.0"
+    "actions-toolkit": "^5.0.0",
+    "mocked-env": "^1.3.5"
   },
   "devDependencies": {
-    "jest": "^26.0.1"
+    "jest": "^26.0.1",
+    "prettier": "^2.7.1"
   },
   "license": "MIT"
 }
