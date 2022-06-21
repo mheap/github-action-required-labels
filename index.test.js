@@ -35,6 +35,7 @@ describe("Required Labels", () => {
     };
     tools.exit.success = jest.fn();
     tools.exit.failure = jest.fn();
+    tools.exit.neutral = jest.fn();
   });
 
   afterEach(() => {
@@ -170,6 +171,21 @@ describe("Required Labels", () => {
         "Unknown mode input [bananas]. Must be one of: exactly, minimum, maximum"
       );
     });
+
+    it("unknown exit_code", () => {
+      restoreTest = mockPr(tools, [], {
+        INPUT_MODE: "exactly",
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_COUNT: "1",
+        INPUT_EXIT_TYPE: "other",
+      });
+
+      action(tools);
+      expect(tools.exit.failure).toBeCalledTimes(1);
+      expect(tools.exit.failure).toBeCalledWith(
+        "Unknown exit_code input [other]. Must be one of: success, neutral, failure"
+      );
+    });
   });
 
   describe("data integrity", () => {
@@ -208,6 +224,68 @@ describe("Required Labels", () => {
 
       expect(tools.exit.success).toBeCalledTimes(1);
       expect(tools.exit.success).toBeCalledWith("Complete");
+    });
+  });
+
+  describe("configurable exit code", () => {
+    it("defaults to failure", () => {
+      // Create a new Toolkit instance
+      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+      });
+
+      action(tools);
+      expect(tools.exit.failure).toBeCalledTimes(1);
+      expect(tools.exit.failure).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+      );
+    });
+
+    it("explicitly uses failure", () => {
+      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_EXIT_TYPE: "failure",
+      });
+
+      action(tools);
+      expect(tools.exit.failure).toBeCalledTimes(1);
+      expect(tools.exit.failure).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+      );
+    });
+
+    it("explicitly uses success", () => {
+      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_EXIT_TYPE: "success",
+      });
+
+      action(tools);
+      expect(tools.exit.success).toBeCalledTimes(1);
+      expect(tools.exit.success).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+      );
+    });
+
+    it("explicitly uses neutral", () => {
+      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_EXIT_TYPE: "neutral",
+      });
+
+      action(tools);
+      expect(tools.exit.neutral).toBeCalledTimes(1);
+      expect(tools.exit.neutral).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+      );
     });
   });
 });
