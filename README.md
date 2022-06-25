@@ -83,5 +83,39 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
     mode: minimum
     count: 2
     labels: "community-reviewed, team-reviewed, codeowner-reviewed"
-    exit_type: neutral # Can be: failure, neutral or success
+    exit_type: success # Can be: success or failure (default: failure)
+```
+
+You can set `exit_type` to success then inspect `outputs.status` to see if the action passed or failed. This is useful when you want to perform additional actions if a label is not present, but not fail the entire build.
+
+If the action passed, `outputs.status` will be `success`. If it failed, `outputs.status` will be `failure`.
+
+Here is a complete workflow example for this use case:
+
+```yaml
+name: Pull Request Labels
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.check-labels.outputs.status }}
+    steps:
+      - id: check-labels
+        uses: mheap/github-action-required-labels@v2
+        with:
+          mode: exactly
+          count: 1
+          labels: "semver:patch, semver:minor, semver:major"
+          exit_type: success
+  do-other:
+    runs-on: ubuntu-latest
+    needs: label
+    steps:
+      - run: echo SUCCESS
+        if: needs.label.outputs.status == 'success'
+      - run: echo FAILURE && exit 1
+        if: needs.label.outputs.status == 'failure'
 ```

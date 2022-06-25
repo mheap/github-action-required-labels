@@ -1,4 +1,5 @@
 const { Toolkit } = require("actions-toolkit");
+const core = require("@actions/core");
 const mockedEnv = require("mocked-env");
 
 describe("Required Labels", () => {
@@ -36,6 +37,7 @@ describe("Required Labels", () => {
     tools.exit.success = jest.fn();
     tools.exit.failure = jest.fn();
     tools.exit.neutral = jest.fn();
+    core.setOutput = jest.fn();
   });
 
   afterEach(() => {
@@ -54,6 +56,8 @@ describe("Required Labels", () => {
       });
 
       action(tools);
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "success");
       expect(tools.exit.success).toBeCalledTimes(1);
       expect(tools.exit.success).toBeCalledWith("Complete");
     });
@@ -67,6 +71,8 @@ describe("Required Labels", () => {
       });
 
       action(tools);
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "success");
       expect(tools.exit.success).toBeCalledTimes(1);
       expect(tools.exit.success).toBeCalledWith("Complete");
     });
@@ -80,6 +86,8 @@ describe("Required Labels", () => {
       });
 
       action(tools);
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "success");
       expect(tools.exit.success).toBeCalledTimes(1);
       expect(tools.exit.success).toBeCalledWith("Complete");
     });
@@ -95,6 +103,8 @@ describe("Required Labels", () => {
       });
 
       action(tools);
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(tools.exit.failure).toBeCalledTimes(1);
       expect(tools.exit.failure).toBeCalledWith(
         "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
@@ -110,6 +120,8 @@ describe("Required Labels", () => {
       });
 
       action(tools);
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(tools.exit.failure).toBeCalledTimes(1);
       expect(tools.exit.failure).toBeCalledWith(
         "Label error. Requires at least 2 of: enhancement, bug, triage. Found: enhancement"
@@ -125,6 +137,8 @@ describe("Required Labels", () => {
       });
 
       action(tools);
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(tools.exit.failure).toBeCalledTimes(1);
       expect(tools.exit.failure).toBeCalledWith(
         "Label error. Requires at most 2 of: enhancement, bug, triage. Found: enhancement, triage, bug"
