@@ -55,6 +55,7 @@ Toolkit.run(async (tools) => {
   let intersection = allowedLabels.filter((x) => appliedLabels.includes(x));
 
   if (mode === "exactly" && intersection.length !== count) {
+    tools.outputs.status = "failure";
     tools.exit[exitType](
       `Label error. Requires exactly ${count} of: ${allowedLabels.join(
         ", "
@@ -64,6 +65,7 @@ Toolkit.run(async (tools) => {
   }
 
   if (mode === "minimum" && intersection.length < count) {
+    tools.outputs.status = "failure";
     tools.exit[exitType](
       `Label error. Requires at least ${count} of: ${allowedLabels.join(
         ", "
@@ -73,6 +75,7 @@ Toolkit.run(async (tools) => {
   }
 
   if (mode === "maximum" && intersection.length > count) {
+    tools.outputs.status = "failure";
     tools.exit[exitType](
       `Label error. Requires at most ${count} of: ${allowedLabels.join(
         ", "
@@ -81,5 +84,6 @@ Toolkit.run(async (tools) => {
     return;
   }
 
+  tools.outputs.status = "success";
   tools.exit.success("Complete");
 });
