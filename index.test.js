@@ -1,6 +1,8 @@
 const { Toolkit } = require("actions-toolkit");
 const core = require("@actions/core");
 const mockedEnv = require("mocked-env");
+const nock = require("nock");
+nock.disableNetConnect();
 
 describe("Required Labels", () => {
   let action, tools;
@@ -44,6 +46,82 @@ describe("Required Labels", () => {
     restore();
     restoreTest();
     jest.resetModules();
+
+    if (!nock.isDone()) {
+      throw new Error(
+        `Not all nock interceptors were used: ${JSON.stringify(
+          nock.pendingMocks()
+        )}`
+      );
+    }
+    nock.cleanAll();
+  });
+
+  describe("interacts with the API", () => {
+    it("fetches the labels from the API", async () => {
+      restoreTest = mockPr(tools, [], {
+        INPUT_LABELS: "enhancement",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        GITHUB_TOKEN: "mock-token-here-abc",
+      });
+
+      nock("https://api.github.com")
+        .get("/repos/mheap/missing-repo/issues/28/labels")
+        .reply(200, [{ name: "enhancement" }, { name: "bug" }]);
+
+      await action(tools);
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(tools.exit.success).toBeCalledTimes(1);
+      expect(tools.exit.success).toBeCalledWith("Complete");
+    });
+
+    it("fetches the labels from the API (and fails)", async () => {
+      restoreTest = mockPr(tools, ["enhancement"], {
+        INPUT_LABELS: "enhancement",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        GITHUB_TOKEN: "mock-token-here-abc",
+      });
+
+      nock("https://api.github.com")
+        .get("/repos/mheap/missing-repo/issues/28/labels")
+        .reply(200, [{ name: "bug" }]);
+
+      await action(tools);
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "failure");
+      expect(tools.exit.failure).toBeCalledTimes(1);
+      expect(tools.exit.failure).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhancement. Found: bug"
+      );
+    });
+
+    it("posts a comment when enabled", async () => {
+      restoreTest = mockPr(tools, ["enhancement"], {
+        INPUT_LABELS: "enhancement",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_ADD_COMMENT: "true",
+        GITHUB_TOKEN: "mock-token-here-abc",
+      });
+
+      nock("https://api.github.com")
+        .get("/repos/mheap/missing-repo/issues/28/labels")
+        .reply(200, [{ name: "bug" }]);
+
+      nock("https://api.github.com")
+        .post("/repos/mheap/missing-repo/issues/28/comments", {
+          body: "Label error. Requires exactly 1 of: enhancement. Found: bug",
+        })
+        .reply(201);
+
+      await action(tools);
+      expect(tools.exit.failure).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhancement. Found: bug"
+      );
+    });
   });
 
   describe("success", () => {
