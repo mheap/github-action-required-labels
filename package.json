@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "jest": "^28.1.1",
+    "nock": "^13.2.9",
     "prettier": "^2.7.1"
   },
   "license": "MIT"

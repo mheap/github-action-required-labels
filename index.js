@@ -55,8 +55,9 @@ Toolkit.run(async (tools) => {
   let intersection = allowedLabels.filter((x) => appliedLabels.includes(x));
 
   if (mode === "exactly" && intersection.length !== count) {
-    tools.outputs.status = "failure";
-    tools.exit[exitType](
+    await exitWithError(
+      tools,
+      exitType,
       `Label error. Requires exactly ${count} of: ${allowedLabels.join(
         ", "
       )}. Found: ${appliedLabels.join(", ")}`
@@ -65,8 +66,9 @@ Toolkit.run(async (tools) => {
   }
 
   if (mode === "minimum" && intersection.length < count) {
-    tools.outputs.status = "failure";
-    tools.exit[exitType](
+    await exitWithError(
+      tools,
+      exitType,
       `Label error. Requires at least ${count} of: ${allowedLabels.join(
         ", "
       )}. Found: ${appliedLabels.join(", ")}`
@@ -75,8 +77,9 @@ Toolkit.run(async (tools) => {
   }
 
   if (mode === "maximum" && intersection.length > count) {
-    tools.outputs.status = "failure";
-    tools.exit[exitType](
+    await exitWithError(
+      tools,
+      exitType,
       `Label error. Requires at most ${count} of: ${allowedLabels.join(
         ", "
       )}. Found: ${appliedLabels.join(", ")}`
@@ -87,3 +90,20 @@ Toolkit.run(async (tools) => {
   tools.outputs.status = "success";
   tools.exit.success("Complete");
 });
+
+async function exitWithError(tools, exitType, message) {
+  if (tools.inputs.add_comment) {
+    if (process.env.GITHUB_TOKEN) {
+      await tools.github.issues.createComment({
+        ...tools.context.issue,
+        body: message,
+      });
+    } else {
+      throw new Error(
+        "The GITHUB_TOKEN environment variable must be set to add a comment"
+      );
+    }
+  }
+  tools.outputs.status = "failure";
+  tools.exit[exitType](message);
+}

@@ -65,6 +65,17 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
     labels: "do not merge"
 ```
 
+### Post a comment when the check fails
+
+```yaml
+- uses: mheap/github-action-required-labels@v2
+  with:
+    mode: exactly
+    count: 1
+    labels: "semver:patch, semver:minor, semver:major"
+    add_comment: true
+```
+
 ### Require multiple labels
 
 ```yaml
