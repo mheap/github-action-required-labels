@@ -1,25 +1,25 @@
 name: Require Labels
 description: Require labels to be added to a pull request before merging
 runs:
-  using: docker
-  image: Dockerfile
+  using: node16
+  main: dist/index.js
 branding:
   icon: check-square
   color: blue
 inputs:
   labels:
-    description: "Comma separated list of labels to match"
+    description: Comma separated list of labels to match
     required: true
   mode:
-    description: "The mode of comparison to use. One of: exactly, minimum, maximum"
+    description: 'The mode of comparison to use. One of: exactly, minimum, maximum'
     required: true
   count:
-    description: "The required number of labels to match"
+    description: The required number of labels to match
     required: true
   add_comment:
-    description: "Add a comment to the PR if required labels are missing"
-    default: "false"
+    description: Add a comment to the PR if required labels are missing
+    default: 'false'
     required: false
   exit_type:
-    description: "The exit type of the action. One of: failure, success, neutral"
+    description: 'The exit type of the action. One of: failure, success, neutral'
     required: false
