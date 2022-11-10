@@ -92,7 +92,7 @@ Toolkit.run(async (tools) => {
 });
 
 async function exitWithError(tools, exitType, message) {
-  if (tools.inputs.add_comment) {
+  if (tools.inputs.add_comment == "true") {
     if (process.env.GITHUB_TOKEN) {
       await tools.github.issues.createComment({
         ...tools.context.issue,
