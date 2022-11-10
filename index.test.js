@@ -380,6 +380,63 @@ describe("Required Labels", () => {
       );
     });
   });
+
+  describe("add comment", () => {
+    it("does not add a comment when add_comment is false", () => {
+      // Create a new Toolkit instance
+      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_ADD_COMMENT: "false",
+      });
+
+      action(tools);
+      expect(tools.exit.failure).toBeCalledTimes(1);
+      expect(tools.exit.failure).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+      );
+    });
+
+    it("throws an error when add_comment == true and GITHUB_TOKEN is not set", () => {
+      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_ADD_COMMENT: "true",
+      });
+
+      expect(action(tools)).rejects.toThrow(
+        "The GITHUB_TOKEN environment variable must be set to add a comment"
+      );
+    });
+
+    it("adds a comment when add_comment is true", async () => {
+      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+        GITHUB_TOKEN: "abc123",
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_ADD_COMMENT: "true",
+      });
+
+      nock("https://api.github.com")
+        .get("/repos/mheap/missing-repo/issues/28/labels")
+        .reply(200, [{ name: "enhancement" }, { name: "bug" }]);
+
+      nock("https://api.github.com")
+        .post("/repos/mheap/missing-repo/issues/28/comments", {
+          body: "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug",
+        })
+        .reply(201);
+
+      await action(tools);
+      expect(tools.exit.failure).toBeCalledTimes(1);
+      expect(tools.exit.failure).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+      );
+    });
+  });
 });
 
 function mockPr(tools, labels, env) {
