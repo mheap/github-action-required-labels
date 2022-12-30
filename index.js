@@ -1,109 +1,111 @@
-const { Toolkit } = require("actions-toolkit");
+const core = require("@actions/core");
+const github = require("@actions/github");
 
-Toolkit.run(async (tools) => {
-  // Process inputs for use later
-  const mode = tools.inputs.mode;
-  const count = parseInt(tools.inputs.count, 10);
-  const allowedLabels = tools.inputs.labels
-    .split(",")
-    .map((l) => l.trim())
-    .filter((r) => r);
+async function action() {
+  try {
+    const token = core.getInput("token", { required: true });
+    const octokit = github.getOctokit(token);
 
-  const exitType = tools.inputs.exit_type || "failure";
+    // Process inputs for use later
+    const mode = core.getInput("mode", { required: true });
+    const count = parseInt(core.getInput("count", { required: true }), 10);
+    const allowedLabels = core
+      .getInput("labels", { required: true })
+      .split(",")
+      .map((l) => l.trim())
+      .filter((r) => r);
 
-  // Validate inputs
-  if (tools.inputs.count === "") {
-    tools.exit.failure(`[count] input is not provided`);
-    return;
-  }
+    const exitType = core.getInput("exit_type") || "failure";
+    const shouldAddComment = core.getInput("add_comment") == "true";
 
-  if (allowedLabels.length === 0) {
-    tools.exit.failure("[labels] input is empty or not provided");
-    return;
-  }
-
-  const allowedModes = ["exactly", "minimum", "maximum"];
-  if (!allowedModes.includes(mode)) {
-    tools.exit.failure(
-      `Unknown mode input [${mode}]. Must be one of: ${allowedModes.join(", ")}`
-    );
-    return;
-  }
-
-  const allowedExitCodes = ["success", "neutral", "failure"];
-  if (!allowedExitCodes.includes(exitType)) {
-    tools.exit.failure(
-      `Unknown exit_code input [${exitType}]. Must be one of: ${allowedExitCodes.join(
-        ", "
-      )}`
-    );
-    return;
-  }
-
-  // If a token is provided, call the API, otherwise read the event.json file
-  let labels;
-  if (process.env.GITHUB_TOKEN) {
-    labels = (await tools.github.issues.listLabelsOnIssue(tools.context.issue))
-      .data;
-  } else {
-    labels = tools.context.payload.pull_request.labels;
-  }
-
-  const appliedLabels = labels.map((label) => label.name);
-
-  // How many labels overlap?
-  let intersection = allowedLabels.filter((x) => appliedLabels.includes(x));
-
-  if (mode === "exactly" && intersection.length !== count) {
-    await exitWithError(
-      tools,
-      exitType,
-      `Label error. Requires exactly ${count} of: ${allowedLabels.join(
-        ", "
-      )}. Found: ${appliedLabels.join(", ")}`
-    );
-    return;
-  }
-
-  if (mode === "minimum" && intersection.length < count) {
-    await exitWithError(
-      tools,
-      exitType,
-      `Label error. Requires at least ${count} of: ${allowedLabels.join(
-        ", "
-      )}. Found: ${appliedLabels.join(", ")}`
-    );
-    return;
-  }
-
-  if (mode === "maximum" && intersection.length > count) {
-    await exitWithError(
-      tools,
-      exitType,
-      `Label error. Requires at most ${count} of: ${allowedLabels.join(
-        ", "
-      )}. Found: ${appliedLabels.join(", ")}`
-    );
-    return;
-  }
-
-  tools.outputs.status = "success";
-  tools.exit.success("Complete");
-});
-
-async function exitWithError(tools, exitType, message) {
-  if (tools.inputs.add_comment == "true") {
-    if (process.env.GITHUB_TOKEN) {
-      await tools.github.issues.createComment({
-        ...tools.context.issue,
-        body: message,
-      });
-    } else {
-      throw new Error(
-        "The GITHUB_TOKEN environment variable must be set to add a comment"
+    const allowedModes = ["exactly", "minimum", "maximum"];
+    if (!allowedModes.includes(mode)) {
+      await exitWithError(
+        exitType,
+        octokit,
+        shouldAddComment,
+        `Unknown mode input [${mode}]. Must be one of: ${allowedModes.join(
+          ", "
+        )}`
       );
+      return;
     }
+
+    const allowedExitCodes = ["success", "failure"];
+    if (!allowedExitCodes.includes(exitType)) {
+      await exitWithError(
+        exitType,
+        octokit,
+        shouldAddComment,
+        `Unknown exit_code input [${exitType}]. Must be one of: ${allowedExitCodes.join(
+          ", "
+        )}`
+      );
+      return;
+    }
+
+    // Fetch the labels using the API
+    // We use the API rather than read event.json in case earlier steps
+    // added a label
+    const labels = (
+      await octokit.rest.issues.listLabelsOnIssue({
+        ...github.context.repo,
+        issue_number: github.context.issue.number,
+      })
+    ).data;
+
+    const appliedLabels = labels.map((label) => label.name);
+
+    // How many labels overlap?
+    let intersection = allowedLabels.filter((x) => appliedLabels.includes(x));
+
+    // Is there an error?
+    let errorMode;
+    if (mode === "exactly" && intersection.length !== count) {
+      errorMode = "exactly";
+    } else if (mode === "minimum" && intersection.length < count) {
+      errorMode = "at least";
+    } else if (mode === "maximum" && intersection.length > count) {
+      errorMode = "at most";
+    }
+
+    // If so, add a comment (if enabled) and fail the run
+    if (errorMode !== undefined) {
+      const errorMessage = `Label error. Requires ${errorMode} ${count} of: ${allowedLabels.join(
+        ", "
+      )}. Found: ${appliedLabels.join(", ")}`;
+      await exitWithError(exitType, octokit, shouldAddComment, errorMessage);
+      return;
+    }
+
+    core.setOutput("status", "success");
+  } catch (e) {
+    core.setFailed(e.message);
   }
-  tools.outputs.status = "failure";
-  tools.exit[exitType](message);
 }
+
+async function exitWithError(exitType, octokit, shouldAddComment, message) {
+  if (shouldAddComment) {
+    await octokit.rest.issues.createComment({
+      ...github.context.repo,
+      issue_number: github.context.issue.number,
+      body: message,
+    });
+  }
+
+  core.setOutput("status", "failure");
+
+  if (exitType === "success") {
+    core.warning(message);
+    return;
+  }
+
+  core.setFailed(message);
+}
+
+/* istanbul ignore next */
+if (require.main === module) {
+  action();
+}
+
+module.exports = action;

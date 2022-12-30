@@ -8,7 +8,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install deps and build
+        run: npm ci --only=production && npm run build
       - name: Automatically build action
-        uses: JasonEtco/build-and-tag-action@v1
+        uses: JasonEtco/build-and-tag-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
