@@ -20,6 +20,8 @@ describe("Required Labels", () => {
       GITHUB_EVENT_NAME: "",
       GITHUB_EVENT_PATH: "",
       INPUT_TOKEN: "this_is_invalid",
+      INPUT_MESSAGE:
+        "Label error. Requires {{errorString}} {{count}} of: {{ provided }}. Found: {{ applied }}",
     });
 
     core.setOutput = jest.fn();
@@ -355,20 +357,44 @@ describe("Required Labels", () => {
       );
     });
 
-    it("adds a comment when add_comment is true", async () => {
+    it("adds a custom comment when comment is provided", async () => {
       restoreTest = mockPr({
         GITHUB_TOKEN: "abc123",
         INPUT_LABELS: "enhancement,bug",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
         INPUT_ADD_COMMENT: "true",
+        INPUT_MESSAGE: "This is a static comment",
       });
 
       mockLabels(["enhancement", "bug"]);
 
       nock("https://api.github.com")
         .post("/repos/mheap/missing-repo/issues/28/comments", {
-          body: "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug",
+          body: "This is a static comment",
+        })
+        .reply(201);
+
+      await action();
+    });
+
+    it("interpolates correctly", async () => {
+      restoreTest = mockPr({
+        GITHUB_TOKEN: "abc123",
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_ADD_COMMENT: "true",
+        // Spacing is important within braces. Proves that templating is space-tolerant
+        INPUT_MESSAGE:
+          "Mode: {{mode }}, Count: {{ count}}, Error String: {{errorString }}, Provided: {{ provided }}, Applied: {{applied}}",
+      });
+
+      mockLabels(["enhancement", "bug"]);
+
+      nock("https://api.github.com")
+        .post("/repos/mheap/missing-repo/issues/28/comments", {
+          body: "Mode: exactly, Count: 1, Error String: exactly, Provided: enhancement, bug, Applied: enhancement, bug",
         })
         .reply(201);
 

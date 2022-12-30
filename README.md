@@ -4,23 +4,19 @@ This action allows you to fail the build if/unless a certain combination of labe
 
 ## Usage
 
-This action has three inputs:
+This action has three required inputs; `labels`, `mode` and `count`
 
-### `labels`
+| Name          | Description                                                                                                 | Required | Default             |
+| ------------- | ----------------------------------------------------------------------------------------------------------- | -------- | ------------------- |
+| `labels`      | Comma separated list of labels to match                                                                     | true     |
+| `mode`        | The mode of comparison to use. One of: exactly, minimum, maximum                                            | true     |
+| `count`       | The required number of labels to match                                                                      | true     |
+| `token`       | The GitHub token to use when calling the API                                                                | false    | ${{ github.token }} |
+| `message`     | The message to log and to add to the PR (if add_comment is true). See the README for available placeholders | false    |
+| `add_comment` | Add a comment to the PR if required labels are missing                                                      | false    | false               |
+| `exit_type`   | The exit type of the action. One of: failure, success                                                       | false    |
 
-This is a list of comma separated labels to match on.
-
-```
-labels: 'label-one, another:label, bananas'
-```
-
-### `mode`
-
-One of: `exactly`, `minimum`, `maximum`
-
-### `count`
-
-The number of labels to apply `mode` to
+This action calls the GitHub API to fetch labels for a PR rather than reading `event.json`. This allows the action to run as intended when an earlier step adds a label. It will use `github.token` by default, and you can set the `token` input to provide alternative authentication.
 
 ## Examples
 
@@ -42,19 +38,6 @@ jobs:
           labels: "semver:patch, semver:minor, semver:major"
 ```
 
-By default this actions reads `event.json`, which will not detect when a label is added in an earlier step.
-To force an API call, set the `GITHUB_TOKEN` environment variable like so:
-
-```yaml
-- uses: mheap/github-action-required-labels@v3
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  with:
-    mode: exactly
-    count: 1
-    labels: "semver:patch, semver:minor, semver:major"
-```
-
 ### Prevent merging if a label exists
 
 ```yaml
@@ -67,6 +50,10 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
 
 ### Post a comment when the check fails
 
+You can choose to add a comment to the PR when the action fails. The default format is:
+
+> Label error. Requires {{ errorString }} {{ count }} of: {{ provided }}. Found: {{ applied }}
+
 ```yaml
 - uses: mheap/github-action-required-labels@v3
   with:
@@ -75,6 +62,30 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
     labels: "semver:patch, semver:minor, semver:major"
     add_comment: true
 ```
+
+### Customising the failure message / comment
+
+You can also customise the message used by providing the `message` input:
+
+```yaml
+- uses: mheap/github-action-required-labels@v3
+  with:
+    mode: exactly
+    count: 1
+    labels: "semver:patch, semver:minor, semver:major"
+    add_comment: true
+    message: "This PR is being prevented from merging because you have added one of our blocking labels: {{ provided }}. You'll need to remove it before this PR can be merged."
+```
+
+The following tokens are available for use in custom messages:
+
+| Token       | Value                                    |
+| ----------- | ---------------------------------------- |
+| mode        | One of: `exactly`, `minimum`, `maximum`  |
+| count       | The value of the `count` input           |
+| errorString | One of: `exactly`, `at least`, `at most` |
+| provided    | The value of the `lavels` input          |
+| applied     | The labels that are applied to the PR    |
 
 ### Require multiple labels
 
@@ -86,7 +97,9 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
     labels: "community-reviewed, team-reviewed, codeowner-reviewed"
 ```
 
-### Exit with a neutral result rather than failure
+### Controlling failure
+
+You can set `exit_type` to success then inspect `outputs.status` to see if the action passed or failed. This is useful when you want to perform additional actions if a label is not present, but not fail the entire build.
 
 ```yaml
 - uses: mheap/github-action-required-labels@v3
@@ -96,8 +109,6 @@ To force an API call, set the `GITHUB_TOKEN` environment variable like so:
     labels: "community-reviewed, team-reviewed, codeowner-reviewed"
     exit_type: success # Can be: success or failure (default: failure)
 ```
-
-You can set `exit_type` to success then inspect `outputs.status` to see if the action passed or failed. This is useful when you want to perform additional actions if a label is not present, but not fail the entire build.
 
 If the action passed, `outputs.status` will be `success`. If it failed, `outputs.status` will be `failure`.
 

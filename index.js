@@ -9,7 +9,7 @@ async function action() {
     // Process inputs for use later
     const mode = core.getInput("mode", { required: true });
     const count = parseInt(core.getInput("count", { required: true }), 10);
-    const allowedLabels = core
+    const providedLabels = core
       .getInput("labels", { required: true })
       .split(",")
       .map((l) => l.trim())
@@ -57,7 +57,7 @@ async function action() {
     const appliedLabels = labels.map((label) => label.name);
 
     // How many labels overlap?
-    let intersection = allowedLabels.filter((x) => appliedLabels.includes(x));
+    let intersection = providedLabels.filter((x) => appliedLabels.includes(x));
 
     // Is there an error?
     let errorMode;
@@ -71,9 +71,15 @@ async function action() {
 
     // If so, add a comment (if enabled) and fail the run
     if (errorMode !== undefined) {
-      const errorMessage = `Label error. Requires ${errorMode} ${count} of: ${allowedLabels.join(
-        ", "
-      )}. Found: ${appliedLabels.join(", ")}`;
+      const comment = core.getInput("message");
+      const errorMessage = tmpl(comment, {
+        mode,
+        count,
+        errorString: errorMode,
+        provided: providedLabels.join(", "),
+        applied: appliedLabels.join(", "),
+      });
+
       await exitWithError(exitType, octokit, shouldAddComment, errorMessage);
       return;
     }
@@ -82,6 +88,12 @@ async function action() {
   } catch (e) {
     core.setFailed(e.message);
   }
+}
+
+function tmpl(t, o) {
+  return t.replace(/\{\{\s*(.*?)\s*\}\}/g, function (item, param) {
+    return o[param];
+  });
 }
 
 async function exitWithError(exitType, octokit, shouldAddComment, message) {
