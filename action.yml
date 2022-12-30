@@ -7,6 +7,10 @@ branding:
   icon: check-square
   color: blue
 inputs:
+  token:
+    description: The GitHub token to use when calling the API
+    default: ${{ github.token }}
+    required: false
   labels:
     description: "Comma separated list of labels to match"
     required: true

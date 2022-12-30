@@ -1,20 +1,12 @@
-const { Toolkit } = require("actions-toolkit");
+const action = require(".");
 const core = require("@actions/core");
+const github = require("@actions/github");
+
 const mockedEnv = require("mocked-env");
 const nock = require("nock");
 nock.disableNetConnect();
 
 describe("Required Labels", () => {
-  let action, tools;
-
-  // Mock Toolkit.run to define `action` so we can call it
-  Toolkit.run = jest.fn((actionFn) => {
-    action = actionFn;
-  });
-
-  // Load up our entrypoint file
-  require(".");
-
   let restore;
   let restoreTest;
   beforeEach(() => {
@@ -27,19 +19,12 @@ describe("Required Labels", () => {
       GITHUB_SHA: "e21490305ed7ac0897b7c7c54c88bb47f7a6d6c4",
       GITHUB_EVENT_NAME: "",
       GITHUB_EVENT_PATH: "",
+      INPUT_TOKEN: "this_is_invalid",
     });
 
-    tools = new Toolkit();
-    tools.context.loadPerTestEnv = function () {
-      this.payload = process.env.GITHUB_EVENT_PATH
-        ? require(process.env.GITHUB_EVENT_PATH)
-        : {};
-      this.event = process.env.GITHUB_EVENT_NAME;
-    };
-    tools.exit.success = jest.fn();
-    tools.exit.failure = jest.fn();
-    tools.exit.neutral = jest.fn();
     core.setOutput = jest.fn();
+    core.warning = jest.fn();
+    core.setFailed = jest.fn();
   });
 
   afterEach(() => {
@@ -59,47 +44,41 @@ describe("Required Labels", () => {
 
   describe("interacts with the API", () => {
     it("fetches the labels from the API", async () => {
-      restoreTest = mockPr(tools, [], {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
         GITHUB_TOKEN: "mock-token-here-abc",
       });
 
-      nock("https://api.github.com")
-        .get("/repos/mheap/missing-repo/issues/28/labels")
-        .reply(200, [{ name: "enhancement" }, { name: "bug" }]);
+      mockLabels(["enhancement", "bug"]);
 
-      await action(tools);
+      await action();
       expect(core.setOutput).toBeCalledTimes(1);
       expect(core.setOutput).toBeCalledWith("status", "success");
-      expect(tools.exit.success).toBeCalledTimes(1);
-      expect(tools.exit.success).toBeCalledWith("Complete");
     });
 
     it("fetches the labels from the API (and fails)", async () => {
-      restoreTest = mockPr(tools, ["enhancement"], {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
         GITHUB_TOKEN: "mock-token-here-abc",
       });
 
-      nock("https://api.github.com")
-        .get("/repos/mheap/missing-repo/issues/28/labels")
-        .reply(200, [{ name: "bug" }]);
+      mockLabels(["bug"]);
 
-      await action(tools);
+      await action();
       expect(core.setOutput).toBeCalledTimes(1);
       expect(core.setOutput).toBeCalledWith("status", "failure");
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
         "Label error. Requires exactly 1 of: enhancement. Found: bug"
       );
     });
 
     it("posts a comment when enabled", async () => {
-      restoreTest = mockPr(tools, ["enhancement"], {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
@@ -107,9 +86,7 @@ describe("Required Labels", () => {
         GITHUB_TOKEN: "mock-token-here-abc",
       });
 
-      nock("https://api.github.com")
-        .get("/repos/mheap/missing-repo/issues/28/labels")
-        .reply(200, [{ name: "bug" }]);
+      mockLabels(["bug"]);
 
       nock("https://api.github.com")
         .post("/repos/mheap/missing-repo/issues/28/comments", {
@@ -117,302 +94,269 @@ describe("Required Labels", () => {
         })
         .reply(201);
 
-      await action(tools);
-      expect(tools.exit.failure).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement. Found: bug"
-      );
+      await action();
     });
   });
 
   describe("success", () => {
-    it("exact count", () => {
-      // Create a new Toolkit instance
-      restoreTest = mockPr(tools, ["enhancement"], {
+    it("exact count", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
       });
+      mockLabels(["enhancement"]);
 
-      action(tools);
+      await action();
+
       expect(core.setOutput).toBeCalledTimes(1);
       expect(core.setOutput).toBeCalledWith("status", "success");
-      expect(tools.exit.success).toBeCalledTimes(1);
-      expect(tools.exit.success).toBeCalledWith("Complete");
     });
 
-    it("at least X", () => {
-      // Create a new Toolkit instance
-      restoreTest = mockPr(tools, ["enhancement", "triage"], {
+    it("at least X", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug,triage",
         INPUT_MODE: "minimum",
         INPUT_COUNT: "2",
       });
+      mockLabels(["enhancement", "bug"]);
 
-      action(tools);
+      await action();
+
       expect(core.setOutput).toBeCalledTimes(1);
       expect(core.setOutput).toBeCalledWith("status", "success");
-      expect(tools.exit.success).toBeCalledTimes(1);
-      expect(tools.exit.success).toBeCalledWith("Complete");
     });
 
-    it("at most X", () => {
-      // Create a new Toolkit instance
-      restoreTest = mockPr(tools, ["enhancement", "triage"], {
+    it("at most X", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug,triage",
         INPUT_MODE: "maximum",
         INPUT_COUNT: "2",
       });
 
-      action(tools);
+      mockLabels(["enhancement", "bug"]);
+
+      await action();
+
       expect(core.setOutput).toBeCalledTimes(1);
       expect(core.setOutput).toBeCalledWith("status", "success");
-      expect(tools.exit.success).toBeCalledTimes(1);
-      expect(tools.exit.success).toBeCalledWith("Complete");
     });
   });
 
   describe("failure", () => {
-    it("exact count", () => {
-      // Create a new Toolkit instance
-      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+    it("exact count", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
       });
+      mockLabels(["enhancement", "bug"]);
 
-      action(tools);
+      await action();
+
       expect(core.setOutput).toBeCalledTimes(1);
       expect(core.setOutput).toBeCalledWith("status", "failure");
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
         "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
       );
     });
 
-    it("at least X", () => {
-      // Create a new Toolkit instance
-      restoreTest = mockPr(tools, ["enhancement"], {
+    it("at least X", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug,triage",
         INPUT_MODE: "minimum",
         INPUT_COUNT: "2",
       });
+      mockLabels(["enhancement"]);
 
-      action(tools);
+      await action();
+
       expect(core.setOutput).toBeCalledTimes(1);
       expect(core.setOutput).toBeCalledWith("status", "failure");
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
         "Label error. Requires at least 2 of: enhancement, bug, triage. Found: enhancement"
       );
     });
 
-    it("at most X", () => {
-      // Create a new Toolkit instance
-      restoreTest = mockPr(tools, ["enhancement", "triage", "bug"], {
+    it("at most X", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug,triage",
         INPUT_MODE: "maximum",
         INPUT_COUNT: "2",
       });
+      mockLabels(["enhancement", "triage", "bug"]);
 
-      action(tools);
+      await action();
       expect(core.setOutput).toBeCalledTimes(1);
       expect(core.setOutput).toBeCalledWith("status", "failure");
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
         "Label error. Requires at most 2 of: enhancement, bug, triage. Found: enhancement, triage, bug"
       );
     });
   });
 
   describe("validation", () => {
-    it("missing INPUT_COUNT", () => {
-      restoreTest = mockPr(tools, [], {
-        INPUT_LABELS: "enhancement,bug",
-        INPUT_MODE: "exactly",
-      });
-      action(tools);
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
-        "[count] input is not provided"
+    it("missing INPUT_MODE", async () => {
+      restoreTest = mockPr({});
+
+      await action();
+
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
+        "Input required and not supplied: mode"
       );
     });
 
-    it("missing INPUT_LABELS", () => {
-      restoreTest = mockPr(tools, [], {
+    it("missing INPUT_COUNT", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+      });
+
+      await action();
+
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
+        "Input required and not supplied: count"
+      );
+    });
+
+    it("missing INPUT_LABELS", async () => {
+      restoreTest = mockPr({
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
       });
 
-      action(tools);
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
-        "[labels] input is empty or not provided"
+      await action();
+
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
+        "Input required and not supplied: labels"
       );
     });
 
-    it("unknown mode", () => {
-      restoreTest = mockPr(tools, [], {
+    it("unknown mode", async () => {
+      restoreTest = mockPr({
         INPUT_MODE: "bananas",
         INPUT_LABELS: "enhancement,bug",
         INPUT_COUNT: "1",
       });
 
-      action(tools);
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
+      await action();
+
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
         "Unknown mode input [bananas]. Must be one of: exactly, minimum, maximum"
       );
     });
 
-    it("unknown exit_code", () => {
-      restoreTest = mockPr(tools, [], {
+    it("unknown exit_code", async () => {
+      restoreTest = mockPr({
         INPUT_MODE: "exactly",
         INPUT_LABELS: "enhancement,bug",
         INPUT_COUNT: "1",
         INPUT_EXIT_TYPE: "other",
       });
 
-      action(tools);
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
-        "Unknown exit_code input [other]. Must be one of: success, neutral, failure"
+      await action();
+
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
+        "Unknown exit_code input [other]. Must be one of: success, failure"
       );
     });
   });
 
   describe("data integrity", () => {
-    it("supports spaces in INPUT_LABELS", () => {
-      restoreTest = mockPr(tools, ["enhancement"], {
+    it("supports spaces in INPUT_LABELS", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement ,   bug",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
       });
+      mockLabels(["bug"]);
 
-      action(tools);
-      expect(tools.exit.success).toBeCalledTimes(1);
-      expect(tools.exit.success).toBeCalledWith("Complete");
-    });
-
-    it("fetches labels from the API when provided with a GITHUB_TOKEN", async () => {
-      tools.github.issues.listLabelsOnIssue = jest
-        .fn()
-        .mockReturnValue(Promise.resolve({ data: [{ name: "enhancement" }] }));
-
-      restoreTest = mockPr(tools, ["should_not_be_used"], {
-        GITHUB_TOKEN: "this_is_a_test_token",
-        INPUT_LABELS: "enhancement ,   bug",
-        INPUT_MODE: "exactly",
-        INPUT_COUNT: "1",
-      });
-
-      await action(tools);
-
-      expect(tools.github.issues.listLabelsOnIssue).toBeCalledTimes(1);
-      expect(tools.github.issues.listLabelsOnIssue).toBeCalledWith({
-        issue_number: 28,
-        owner: "mheap",
-        repo: "missing-repo",
-      });
-
-      expect(tools.exit.success).toBeCalledTimes(1);
-      expect(tools.exit.success).toBeCalledWith("Complete");
+      await action();
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "success");
     });
   });
 
   describe("configurable exit code", () => {
-    it("defaults to failure", () => {
-      // Create a new Toolkit instance
-      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+    it("defaults to failure", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
       });
+      mockLabels(["enhancement", "bug"]);
 
-      action(tools);
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
+      await action();
+
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
         "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
       );
     });
 
-    it("explicitly uses failure", () => {
-      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+    it("explicitly uses failure", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
         INPUT_EXIT_TYPE: "failure",
       });
+      mockLabels(["enhancement", "bug"]);
 
-      action(tools);
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
+      await action();
+
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
         "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
       );
     });
 
-    it("explicitly uses success", () => {
-      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+    it("explicitly uses success", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
         INPUT_EXIT_TYPE: "success",
       });
+      mockLabels(["enhancement", "bug"]);
 
-      action(tools);
-      expect(tools.exit.success).toBeCalledTimes(1);
-      expect(tools.exit.success).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
-      );
-    });
+      await action();
 
-    it("explicitly uses neutral", () => {
-      restoreTest = mockPr(tools, ["enhancement", "bug"], {
-        INPUT_LABELS: "enhancement,bug",
-        INPUT_MODE: "exactly",
-        INPUT_COUNT: "1",
-        INPUT_EXIT_TYPE: "neutral",
-      });
-
-      action(tools);
-      expect(tools.exit.neutral).toBeCalledTimes(1);
-      expect(tools.exit.neutral).toBeCalledWith(
+      expect(core.warning).toBeCalledTimes(1);
+      expect(core.warning).toBeCalledWith(
         "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
       );
     });
   });
 
   describe("add comment", () => {
-    it("does not add a comment when add_comment is false", () => {
-      // Create a new Toolkit instance
-      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+    it("does not add a comment when add_comment is false", async () => {
+      restoreTest = mockPr({
         INPUT_LABELS: "enhancement,bug",
         INPUT_MODE: "exactly",
         INPUT_COUNT: "1",
         INPUT_ADD_COMMENT: "false",
       });
+      mockLabels(["enhancement", "bug"]);
 
-      action(tools);
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
+      await action();
+
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
         "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
       );
     });
 
-    it("throws an error when add_comment == true and GITHUB_TOKEN is not set", () => {
-      restoreTest = mockPr(tools, ["enhancement", "bug"], {
-        INPUT_LABELS: "enhancement,bug",
-        INPUT_MODE: "exactly",
-        INPUT_COUNT: "1",
-        INPUT_ADD_COMMENT: "true",
-      });
-
-      expect(action(tools)).rejects.toThrow(
-        "The GITHUB_TOKEN environment variable must be set to add a comment"
-      );
-    });
-
     it("adds a comment when add_comment is true", async () => {
-      restoreTest = mockPr(tools, ["enhancement", "bug"], {
+      restoreTest = mockPr({
         GITHUB_TOKEN: "abc123",
         INPUT_LABELS: "enhancement,bug",
         INPUT_MODE: "exactly",
@@ -420,9 +364,7 @@ describe("Required Labels", () => {
         INPUT_ADD_COMMENT: "true",
       });
 
-      nock("https://api.github.com")
-        .get("/repos/mheap/missing-repo/issues/28/labels")
-        .reply(200, [{ name: "enhancement" }, { name: "bug" }]);
+      mockLabels(["enhancement", "bug"]);
 
       nock("https://api.github.com")
         .post("/repos/mheap/missing-repo/issues/28/comments", {
@@ -430,42 +372,38 @@ describe("Required Labels", () => {
         })
         .reply(201);
 
-      await action(tools);
-      expect(tools.exit.failure).toBeCalledTimes(1);
-      expect(tools.exit.failure).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
-      );
+      await action();
     });
   });
 });
 
-function mockPr(tools, labels, env) {
+function mockPr(env) {
   return mockEvent(
-    tools,
     "pull_request",
     {
       action: "opened",
       pull_request: {
         number: 28,
-        labels: labels.map((name) => {
-          return { name };
-        }),
+        labels: [],
       },
     },
     env
   );
 }
 
-function mockEvent(tools, eventName, mockPayload, additionalParams = {}) {
-  jest.mock(
-    "/github/workspace/event.json",
-    () => {
-      return mockPayload;
-    },
-    {
-      virtual: true,
-    }
-  );
+function mockLabels(labels) {
+  nock("https://api.github.com")
+    .get("/repos/mheap/missing-repo/issues/28/labels")
+    .reply(
+      200,
+      labels.map((name) => {
+        return { name };
+      })
+    );
+}
+
+function mockEvent(eventName, mockPayload, additionalParams = {}) {
+  github.context.payload = mockPayload;
 
   const params = {
     GITHUB_EVENT_NAME: eventName,
@@ -474,6 +412,5 @@ function mockEvent(tools, eventName, mockPayload, additionalParams = {}) {
   };
 
   const r = mockedEnv(params);
-  tools.context.loadPerTestEnv();
   return r;
 }
