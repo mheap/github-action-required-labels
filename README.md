@@ -84,7 +84,7 @@ The following tokens are available for use in custom messages:
 | mode        | One of: `exactly`, `minimum`, `maximum`  |
 | count       | The value of the `count` input           |
 | errorString | One of: `exactly`, `at least`, `at most` |
-| provided    | The value of the `lavels` input          |
+| provided    | The value of the `labels` input          |
 | applied     | The labels that are applied to the PR    |
 
 ### Require multiple labels
