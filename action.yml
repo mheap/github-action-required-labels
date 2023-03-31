@@ -22,6 +22,7 @@ inputs:
     required: true
   message:
     description: "The message to log and to add to the PR (if add_comment is true). See the README for available placeholders"
+    default: "Label error. Requires {{errorString}} {{count}} of: {{ provided }}. Found: {{ applied }}"
     required: false
   add_comment:
     description: "Add a comment to the PR if required labels are missing"
