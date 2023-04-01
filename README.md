@@ -30,6 +30,9 @@ on:
 jobs:
   label:
     runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: read
     steps:
       - uses: mheap/github-action-required-labels@v3
         with:
@@ -122,6 +125,9 @@ on:
 jobs:
   label:
     runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: read
     outputs:
       status: ${{ steps.check-labels.outputs.status }}
     steps:
