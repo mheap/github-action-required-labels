@@ -31,8 +31,8 @@ jobs:
   label:
     runs-on: ubuntu-latest
     permissions:
-      issues: read
-      pull-requests: read
+      issues: write
+      pull-requests: write
     steps:
       - uses: mheap/github-action-required-labels@v3
         with:
@@ -126,8 +126,8 @@ jobs:
   label:
     runs-on: ubuntu-latest
     permissions:
-      issues: read
-      pull-requests: read
+      issues: write
+      pull-requests: write
     outputs:
       status: ${{ steps.check-labels.outputs.status }}
     steps:
