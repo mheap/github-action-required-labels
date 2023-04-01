@@ -6,6 +6,8 @@ const mockedEnv = require("mocked-env");
 const nock = require("nock");
 nock.disableNetConnect();
 
+const matchToken = `<!-- reqlabelmessage -->`;
+
 describe("Required Labels", () => {
   let restore;
   let restoreTest;
@@ -90,11 +92,32 @@ describe("Required Labels", () => {
 
       mockLabels(["bug"]);
 
+      mockListComments([]);
+
       nock("https://api.github.com")
         .post("/repos/mheap/missing-repo/issues/28/comments", {
-          body: "Label error. Requires exactly 1 of: enhancement. Found: bug",
+          body: `${matchToken}Label error. Requires exactly 1 of: enhancement. Found: bug`,
         })
         .reply(201);
+
+      await action();
+    });
+
+    it("deletes a comment when passing", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_ADD_COMMENT: "true",
+        GITHUB_TOKEN: "mock-token-here-abc",
+      });
+
+      mockLabels(["bug"]);
+      mockListComments([{ id: "12345", body: `${matchToken}This` }]);
+
+      nock("https://api.github.com")
+        .delete("/repos/mheap/missing-repo/issues/comments/12345")
+        .reply(200);
 
       await action();
     });
@@ -369,9 +392,58 @@ describe("Required Labels", () => {
 
       mockLabels(["enhancement", "bug"]);
 
+      mockListComments([]);
+
       nock("https://api.github.com")
         .post("/repos/mheap/missing-repo/issues/28/comments", {
-          body: "This is a static comment",
+          body: `${matchToken}This is a static comment`,
+        })
+        .reply(201);
+
+      await action();
+    });
+
+    it("updates an existing comment when one is found", async () => {
+      restoreTest = mockPr({
+        GITHUB_TOKEN: "abc123",
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_ADD_COMMENT: "true",
+        INPUT_MESSAGE: "This is a static comment",
+      });
+
+      mockLabels(["enhancement", "bug"]);
+
+      mockListComments([{ id: "12345", body: `${matchToken}This` }]);
+
+      nock("https://api.github.com")
+        .patch("/repos/mheap/missing-repo/issues/comments/12345", {
+          issue_number: 28,
+          body: `${matchToken}This is a static comment`,
+        })
+        .reply(200);
+
+      await action();
+    });
+
+    it("creates when comments exist but don't match", async () => {
+      restoreTest = mockPr({
+        GITHUB_TOKEN: "abc123",
+        INPUT_LABELS: "enhancement,bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_ADD_COMMENT: "true",
+        INPUT_MESSAGE: "This is a static comment",
+      });
+
+      mockLabels(["enhancement", "bug"]);
+
+      mockListComments([{ id: "12345", body: `No Match` }]);
+
+      nock("https://api.github.com")
+        .post("/repos/mheap/missing-repo/issues/28/comments", {
+          body: `${matchToken}This is a static comment`,
         })
         .reply(201);
 
@@ -392,9 +464,10 @@ describe("Required Labels", () => {
 
       mockLabels(["enhancement", "bug"]);
 
+      mockListComments([]);
       nock("https://api.github.com")
         .post("/repos/mheap/missing-repo/issues/28/comments", {
-          body: "Mode: exactly, Count: 1, Error String: exactly, Provided: enhancement, bug, Applied: enhancement, bug",
+          body: `${matchToken}Mode: exactly, Count: 1, Error String: exactly, Provided: enhancement, bug, Applied: enhancement, bug`,
         })
         .reply(201);
 
@@ -424,6 +497,17 @@ function mockLabels(labels) {
       200,
       labels.map((name) => {
         return { name };
+      })
+    );
+}
+
+function mockListComments(comments) {
+  nock("https://api.github.com")
+    .get("/repos/mheap/missing-repo/issues/28/comments")
+    .reply(
+      200,
+      comments.map((c) => {
+        return { body: c.body, id: c.id };
       })
     );
 }
