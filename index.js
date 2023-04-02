@@ -1,6 +1,7 @@
 const core = require("@actions/core");
 const github = require("@actions/github");
 
+const matchToken = `<!-- reqlabelmessage -->`;
 async function action() {
   try {
     const token = core.getInput("token", { required: true });
@@ -84,6 +85,24 @@ async function action() {
       return;
     }
 
+    // Remove the comment if it exists
+    if (shouldAddComment) {
+      const { data: existing } = await octokit.rest.issues.listComments({
+        ...github.context.repo,
+        issue_number: github.context.issue.number,
+      });
+
+      const generatedComment = existing.find((c) =>
+        c.body.includes(matchToken)
+      );
+      if (generatedComment) {
+        await octokit.rest.issues.deleteComment({
+          ...github.context.repo,
+          comment_id: generatedComment.id,
+        });
+      }
+    }
+
     core.setOutput("status", "success");
   } catch (e) {
     core.setFailed(e.message);
@@ -98,11 +117,27 @@ function tmpl(t, o) {
 
 async function exitWithError(exitType, octokit, shouldAddComment, message) {
   if (shouldAddComment) {
-    await octokit.rest.issues.createComment({
+    // Is there an existing comment?
+    const { data: existing } = await octokit.rest.issues.listComments({
       ...github.context.repo,
       issue_number: github.context.issue.number,
-      body: message,
     });
+
+    const generatedComment = existing.find((c) => c.body.includes(matchToken));
+
+    const params = {
+      ...github.context.repo,
+      issue_number: github.context.issue.number,
+      body: `${matchToken}${message}`,
+    };
+
+    // If so, update it
+    let method = "createComment";
+    if (generatedComment) {
+      method = "updateComment";
+      params.comment_id = generatedComment.id;
+    }
+    await octokit.rest.issues[method](params);
   }
 
   core.setOutput("status", "failure");

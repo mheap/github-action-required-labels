@@ -6,15 +6,15 @@ This action allows you to fail the build if/unless a certain combination of labe
 
 This action has three required inputs; `labels`, `mode` and `count`
 
-| Name          | Description                                                                                                 | Required | Default             |
-| ------------- | ----------------------------------------------------------------------------------------------------------- | -------- | ------------------- |
-| `labels`      | Comma separated list of labels to match                                                                     | true     |
-| `mode`        | The mode of comparison to use. One of: exactly, minimum, maximum                                            | true     |
-| `count`       | The required number of labels to match                                                                      | true     |
-| `token`       | The GitHub token to use when calling the API                                                                | false    | ${{ github.token }} |
-| `message`     | The message to log and to add to the PR (if add_comment is true). See the README for available placeholders | false    |
-| `add_comment` | Add a comment to the PR if required labels are missing                                                      | false    | false               |
-| `exit_type`   | The exit type of the action. One of: failure, success                                                       | false    |
+| Name          | Description                                                                                                                                                  | Required | Default             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------------------- |
+| `labels`      | Comma separated list of labels to match                                                                                                                      | true     |
+| `mode`        | The mode of comparison to use. One of: exactly, minimum, maximum                                                                                             | true     |
+| `count`       | The required number of labels to match                                                                                                                       | true     |
+| `token`       | The GitHub token to use when calling the API                                                                                                                 | false    | ${{ github.token }} |
+| `message`     | The message to log and to add to the PR (if add_comment is true). See the README for available placeholders                                                  | false    |
+| `add_comment` | Add a comment to the PR if required labels are missing. If a comment already exists, it will be updated. When the action passes, the comment will be deleted | false    | false               |
+| `exit_type`   | The exit type of the action. One of: failure, success                                                                                                        | false    |
 
 This action calls the GitHub API to fetch labels for a PR rather than reading `event.json`. This allows the action to run as intended when an earlier step adds a label. It will use `github.token` by default, and you can set the `token` input to provide alternative authentication.
 
@@ -31,10 +31,10 @@ jobs:
   label:
     runs-on: ubuntu-latest
     permissions:
-      issues: read
-      pull-requests: read
+      issues: write
+      pull-requests: write
     steps:
-      - uses: mheap/github-action-required-labels@v3
+      - uses: mheap/github-action-required-labels@v4
         with:
           mode: exactly
           count: 1
@@ -44,7 +44,7 @@ jobs:
 ### Prevent merging if a label exists
 
 ```yaml
-- uses: mheap/github-action-required-labels@v3
+- uses: mheap/github-action-required-labels@v4
   with:
     mode: exactly
     count: 0
@@ -58,7 +58,7 @@ You can choose to add a comment to the PR when the action fails. The default for
 > Label error. Requires {{ errorString }} {{ count }} of: {{ provided }}. Found: {{ applied }}
 
 ```yaml
-- uses: mheap/github-action-required-labels@v3
+- uses: mheap/github-action-required-labels@v4
   with:
     mode: exactly
     count: 1
@@ -66,12 +66,14 @@ You can choose to add a comment to the PR when the action fails. The default for
     add_comment: true
 ```
 
+If a comment already exists, it will be updated. When the action passes, the comment will be deleted.
+
 ### Customising the failure message / comment
 
 You can also customise the message used by providing the `message` input:
 
 ```yaml
-- uses: mheap/github-action-required-labels@v3
+- uses: mheap/github-action-required-labels@v4
   with:
     mode: exactly
     count: 1
@@ -93,7 +95,7 @@ The following tokens are available for use in custom messages:
 ### Require multiple labels
 
 ```yaml
-- uses: mheap/github-action-required-labels@v3
+- uses: mheap/github-action-required-labels@v4
   with:
     mode: minimum
     count: 2
@@ -105,7 +107,7 @@ The following tokens are available for use in custom messages:
 You can set `exit_type` to success then inspect `outputs.status` to see if the action passed or failed. This is useful when you want to perform additional actions if a label is not present, but not fail the entire build.
 
 ```yaml
-- uses: mheap/github-action-required-labels@v3
+- uses: mheap/github-action-required-labels@v4
   with:
     mode: minimum
     count: 2
@@ -126,13 +128,13 @@ jobs:
   label:
     runs-on: ubuntu-latest
     permissions:
-      issues: read
-      pull-requests: read
+      issues: write
+      pull-requests: write
     outputs:
       status: ${{ steps.check-labels.outputs.status }}
     steps:
       - id: check-labels
-        uses: mheap/github-action-required-labels@v3
+        uses: mheap/github-action-required-labels@v4
         with:
           mode: exactly
           count: 1
