@@ -128,7 +128,7 @@ async function exitWithError(exitType, octokit, shouldAddComment, message) {
     const params = {
       ...github.context.repo,
       issue_number: github.context.issue.number,
-      body: `${matchToken}${message}`,
+      body: `${matchToken}\n${message}`,
     };
 
     // If so, update it
