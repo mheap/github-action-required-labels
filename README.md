@@ -18,6 +18,8 @@ This action has three required inputs; `labels`, `mode` and `count`
 
 This action calls the GitHub API to fetch labels for a PR rather than reading `event.json`. This allows the action to run as intended when an earlier step adds a label. It will use `github.token` by default, and you can set the `token` input to provide alternative authentication.
 
+If successful, any matching labels will be output in `outputs.labels` as a comma separated string.
+
 ## Examples
 
 ### Complete example
@@ -148,4 +150,31 @@ jobs:
         if: needs.label.outputs.status == 'success'
       - run: echo FAILURE && exit 1
         if: needs.label.outputs.status == 'failure'
+```
+
+### Using Output Labels
+
+If the action was successful you can access the matching labels via `outputs.labels`. This is useful if you want to use the labels in a later step.
+
+```yaml
+name: Pull Request Labels
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - id: check-labels
+        uses: mheap/github-action-required-labels@v4
+        with:
+          mode: minimum
+          count: 1
+          labels: "feature-1, feature-2, feature-3"
+      - run: |
+          echo "Enabled Features:"
+          for f in $(echo "{{steps.check-labels.outputs.labels}}" | sed "s/,/ /g")
+          do
+            echo "$f"
+          done
 ```
