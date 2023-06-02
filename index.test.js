@@ -58,8 +58,9 @@ describe("Required Labels", () => {
       mockLabels(["enhancement", "bug"]);
 
       await action();
-      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledTimes(2);
       expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement");
     });
 
     it("fetches the labels from the API (and fails)", async () => {
@@ -134,8 +135,9 @@ describe("Required Labels", () => {
 
       await action();
 
-      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledTimes(2);
       expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement");
     });
 
     it("at least X", async () => {
@@ -148,8 +150,9 @@ describe("Required Labels", () => {
 
       await action();
 
-      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledTimes(2);
       expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement,bug");
     });
 
     it("at most X", async () => {
@@ -163,9 +166,11 @@ describe("Required Labels", () => {
 
       await action();
 
-      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledTimes(2);
       expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement,bug");
     });
+
   });
 
   describe("failure", () => {
@@ -305,8 +310,9 @@ describe("Required Labels", () => {
       mockLabels(["bug"]);
 
       await action();
-      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledTimes(2);
       expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "bug");
     });
   });
 

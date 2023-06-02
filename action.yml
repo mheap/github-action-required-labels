@@ -6,6 +6,9 @@ runs:
 branding:
   icon: check-square
   color: blue
+outputs:
+  labels:
+    description: "The labels that were matched as a comma separated string"
 inputs:
   token:
     description: The GitHub token to use when calling the API

@@ -103,6 +103,7 @@ async function action() {
       }
     }
 
+    core.setOutput("labels", intersection.join(","));
     core.setOutput("status", "success");
   } catch (e) {
     core.setFailed(e.message);
