@@ -1,7 +1,7 @@
 const core = require("@actions/core");
 const github = require("@actions/github");
 
-const matchToken = `<!-- reqlabelmessage -->`;
+const matchToken = `<!-- reqlabelmessage -->\n`;
 async function action() {
   try {
     const token = core.getInput("token", { required: true });
@@ -128,7 +128,7 @@ async function exitWithError(exitType, octokit, shouldAddComment, message) {
     const params = {
       ...github.context.repo,
       issue_number: github.context.issue.number,
-      body: `${matchToken}\n${message}`,
+      body: `${matchToken}${message}`,
     };
 
     // If so, update it
