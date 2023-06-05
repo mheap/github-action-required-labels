@@ -170,7 +170,6 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "success");
       expect(core.setOutput).toBeCalledWith("labels", "enhancement,bug");
     });
-
   });
 
   describe("failure", () => {
