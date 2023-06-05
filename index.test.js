@@ -6,7 +6,7 @@ const mockedEnv = require("mocked-env");
 const nock = require("nock");
 nock.disableNetConnect();
 
-const matchToken = `<!-- reqlabelmessage -->`;
+const matchToken = `<!-- reqlabelmessage -->\n`;
 
 describe("Required Labels", () => {
   let restore;

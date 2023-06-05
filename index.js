@@ -1,7 +1,7 @@
 const core = require("@actions/core");
 const github = require("@actions/github");
 
-const matchToken = `<!-- reqlabelmessage -->`;
+const matchToken = `<!-- reqlabelmessage -->\n`;
 async function action() {
   try {
     const token = core.getInput("token", { required: true });
