@@ -1,8 +1,18 @@
 const core = require("@actions/core");
 const github = require("@actions/github");
 
-const matchToken = `<!-- reqlabelmessage -->\n`;
+let matchToken;
 async function action() {
+  // Use a guaranteed-unique (but persistent) string to match "our" comment
+  // https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+  const matchTokenId = [
+    process.env.GITHUB_WORKFLOW,
+    process.env.GITHUB_JOB,
+    process.env.GITHUB_ACTION,
+  ].join("/");
+
+  matchToken = `<!-- ${matchTokenId} -->\n`;
+
   try {
     const token = core.getInput("token", { required: true });
     const octokit = github.getOctokit(token);

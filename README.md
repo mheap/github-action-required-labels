@@ -104,6 +104,12 @@ The following tokens are available for use in custom messages:
     labels: "community-reviewed, team-reviewed, codeowner-reviewed"
 ```
 
+### Preventing comment collisions
+
+This action uses a combination of the workflow name/path, job ID, and step ID to add an invisible "match token" to the beginning of any comments it creates. That way, it can later know which comments it owns when modifying them, while supporting multiple "instances" of this action to be run at the same time within a repo.
+
+However, note that if any of those three identifiers change, any "in flight" comments on open PRs may be orphaned (since the final match token will have changed between runs). If you rename any of those identifiers, you will have to delete any orphaned comments manually.
+
 ### Controlling failure
 
 You can set `exit_type` to success then inspect `outputs.status` to see if the action passed or failed. This is useful when you want to perform additional actions if a label is not present, but not fail the entire build.

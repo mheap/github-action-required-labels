@@ -6,7 +6,8 @@ const mockedEnv = require("mocked-env");
 const nock = require("nock");
 nock.disableNetConnect();
 
-const matchToken = `<!-- reqlabelmessage -->\n`;
+// note: these need to match the mocked env vars below
+const matchToken = `<!-- demo-workflow/demo-job/required-labels -->\n`;
 
 describe("Required Labels", () => {
   let restore;
@@ -14,6 +15,7 @@ describe("Required Labels", () => {
   beforeEach(() => {
     restore = mockedEnv({
       GITHUB_WORKFLOW: "demo-workflow",
+      GITHUB_JOB: "demo-job",
       GITHUB_ACTION: "required-labels",
       GITHUB_ACTOR: "mheap",
       GITHUB_REPOSITORY: "mheap/missing-repo",
