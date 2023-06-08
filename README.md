@@ -36,7 +36,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: mheap/github-action-required-labels@v4
+      - uses: mheap/github-action-required-labels@v5
         with:
           mode: exactly
           count: 1
@@ -46,7 +46,7 @@ jobs:
 ### Prevent merging if a label exists
 
 ```yaml
-- uses: mheap/github-action-required-labels@v4
+- uses: mheap/github-action-required-labels@v5
   with:
     mode: exactly
     count: 0
@@ -60,7 +60,7 @@ You can choose to add a comment to the PR when the action fails. The default for
 > Label error. Requires {{ errorString }} {{ count }} of: {{ provided }}. Found: {{ applied }}
 
 ```yaml
-- uses: mheap/github-action-required-labels@v4
+- uses: mheap/github-action-required-labels@v5
   with:
     mode: exactly
     count: 1
@@ -75,7 +75,7 @@ If a comment already exists, it will be updated. When the action passes, the com
 You can also customise the message used by providing the `message` input:
 
 ```yaml
-- uses: mheap/github-action-required-labels@v4
+- uses: mheap/github-action-required-labels@v5
   with:
     mode: exactly
     count: 1
@@ -97,7 +97,7 @@ The following tokens are available for use in custom messages:
 ### Require multiple labels
 
 ```yaml
-- uses: mheap/github-action-required-labels@v4
+- uses: mheap/github-action-required-labels@v5
   with:
     mode: minimum
     count: 2
@@ -115,7 +115,7 @@ However, note that if any of those three identifiers change, any "in flight" com
 You can set `exit_type` to success then inspect `outputs.status` to see if the action passed or failed. This is useful when you want to perform additional actions if a label is not present, but not fail the entire build.
 
 ```yaml
-- uses: mheap/github-action-required-labels@v4
+- uses: mheap/github-action-required-labels@v5
   with:
     mode: minimum
     count: 2
@@ -142,7 +142,7 @@ jobs:
       status: ${{ steps.check-labels.outputs.status }}
     steps:
       - id: check-labels
-        uses: mheap/github-action-required-labels@v4
+        uses: mheap/github-action-required-labels@v5
         with:
           mode: exactly
           count: 1
@@ -172,7 +172,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: check-labels
-        uses: mheap/github-action-required-labels@v4
+        uses: mheap/github-action-required-labels@v5
         with:
           mode: minimum
           count: 1
