@@ -315,6 +315,34 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "success");
       expect(core.setOutput).toBeCalledWith("labels", "bug");
     });
+
+    it("supports multiple lines in INPUT_LABELS", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhancement\nbug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+      });
+      mockLabels(["bug"]);
+
+      await action();
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "bug");
+    });
+
+    it("supports multiple lines with commas in INPUT_LABELS", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhancement,\nbug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+      });
+      mockLabels(["bug"]);
+
+      await action();
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "bug");
+    });
   });
 
   describe("configurable exit code", () => {

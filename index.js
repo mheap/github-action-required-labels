@@ -22,6 +22,8 @@ async function action() {
     const count = parseInt(core.getInput("count", { required: true }), 10);
     const providedLabels = core
       .getInput("labels", { required: true })
+      .split("\n")
+      .join(",")
       .split(",")
       .map((l) => l.trim())
       .filter((r) => r);
