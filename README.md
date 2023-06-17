@@ -8,7 +8,7 @@ This action has three required inputs; `labels`, `mode` and `count`
 
 | Name          | Description                                                                                                                                                  | Required | Default             |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------------------- |
-| `labels`      | Comma separated list of labels to match                                                                                                                      | true     |
+| `labels`      | Comma or new line separated list of labels to match                                                                                                          | true     |
 | `mode`        | The mode of comparison to use. One of: exactly, minimum, maximum                                                                                             | true     |
 | `count`       | The required number of labels to match                                                                                                                       | true     |
 | `token`       | The GitHub token to use when calling the API                                                                                                                 | false    | ${{ github.token }} |
