@@ -20,16 +20,29 @@ async function action() {
     // Process inputs for use later
     const mode = core.getInput("mode", { required: true });
     const count = parseInt(core.getInput("count", { required: true }), 10);
-    const providedLabels = core
-      .getInput("labels", { required: true })
-      .split("\n")
-      .join(",")
-      .split(",")
-      .map((l) => l.trim())
-      .filter((r) => r);
 
     const exitType = core.getInput("exit_type") || "failure";
     const shouldAddComment = core.getInput("add_comment") == "true";
+    const labelsAreRegex = core.getInput("use_regex") == "true";
+
+    let providedLabels = core.getInput("labels", { required: true });
+
+    providedLabels = core.getInput("labels", { required: true });
+    if (labelsAreRegex) {
+      // If labels are regex they must be provided as new line delimited
+      providedLabels = providedLabels.split("\n");
+    } else {
+      // Comma separated are allowed for exact string matches
+      // This may be removed in the next major version
+      providedLabels = providedLabels
+        .split("\n")
+        .join(",")
+        .split(",")
+        .map((l) => l.trim());
+    }
+
+    // Remove any empty labels
+    providedLabels = providedLabels.filter((r) => r);
 
     const allowedModes = ["exactly", "minimum", "maximum"];
     if (!allowedModes.includes(mode)) {
@@ -70,7 +83,16 @@ async function action() {
     const appliedLabels = labels.map((label) => label.name);
 
     // How many labels overlap?
-    let intersection = providedLabels.filter((x) => appliedLabels.includes(x));
+    let intersection = [];
+    if (labelsAreRegex) {
+      intersection = appliedLabels.filter((appliedLabel) =>
+        providedLabels.some((providedLabel) =>
+          new RegExp(providedLabel).test(appliedLabel)
+        )
+      );
+    } else {
+      intersection = providedLabels.filter((x) => appliedLabels.includes(x));
+    }
 
     // Is there an error?
     let errorMode;

@@ -172,6 +172,55 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "success");
       expect(core.setOutput).toBeCalledWith("labels", "enhancement,bug");
     });
+
+    it("exactly (regex)", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhance.*",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_USE_REGEX: "true",
+      });
+      mockLabels(["enhancement"]);
+
+      await action();
+
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement");
+    });
+
+    it("at least X (regex)", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhance.*\nbug\ntriage",
+        INPUT_MODE: "minimum",
+        INPUT_COUNT: "2",
+        INPUT_USE_REGEX: "true",
+      });
+      mockLabels(["enhancement", "bug"]);
+
+      await action();
+
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement,bug");
+    });
+
+    it("at most X (regex)", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhance.*\nbug\ntriage",
+        INPUT_MODE: "maximum",
+        INPUT_COUNT: "2",
+        INPUT_USE_REGEX: "true",
+      });
+
+      mockLabels(["enhancement", "bug"]);
+
+      await action();
+
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement,bug");
+    });
   });
 
   describe("failure", () => {
@@ -190,6 +239,44 @@ describe("Required Labels", () => {
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
         "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+      );
+    });
+
+    it("exact count (regex)", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhance.*\nbug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_USE_REGEX: "true",
+      });
+      mockLabels(["enhancement", "bug"]);
+
+      await action();
+
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "failure");
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhance.*, bug. Found: enhancement, bug"
+      );
+    });
+
+    it("fails when regex are provided as comma delimited", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhance.*, bug",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_USE_REGEX: "true",
+      });
+      mockLabels(["enhancement", "bug"]);
+
+      await action();
+
+      expect(core.setOutput).toBeCalledTimes(1);
+      expect(core.setOutput).toBeCalledWith("status", "failure");
+      expect(core.setFailed).toBeCalledTimes(1);
+      expect(core.setFailed).toBeCalledWith(
+        "Label error. Requires exactly 1 of: enhance.*, bug. Found: enhancement, bug"
       );
     });
 
