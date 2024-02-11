@@ -15,7 +15,7 @@ inputs:
     default: ${{ github.token }}
     required: false
   labels:
-    description: "Comma separated list of labels to match"
+    description: "Comma or new line separated list of labels to match"
     required: true
   mode:
     description: "The mode of comparison to use. One of: exactly, minimum, maximum"
@@ -34,3 +34,6 @@ inputs:
   exit_type:
     description: "The exit type of the action. One of: failure, success"
     required: false
+  use_regex:
+    description: Evaluate the values in `labels` as regular expressions
+    default: "false"
