@@ -189,6 +189,22 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("labels", "enhancement");
     });
 
+    it("exactly (multiple regex)", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "backport/none\nbackport \\d.\\d",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+        INPUT_USE_REGEX: "true",
+      });
+      mockLabels(["backport 3.7"]);
+
+      await action();
+
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "backport 3.7");
+    });
+
     it("at least X (regex)", async () => {
       restoreTest = mockPr({
         INPUT_LABELS: "enhance.*\nbug\ntriage",
