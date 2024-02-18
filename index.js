@@ -27,7 +27,6 @@ async function action() {
 
     let providedLabels = core.getInput("labels", { required: true });
 
-    providedLabels = core.getInput("labels", { required: true });
     if (labelsAreRegex) {
       // If labels are regex they must be provided as new line delimited
       providedLabels = providedLabels.split("\n");
