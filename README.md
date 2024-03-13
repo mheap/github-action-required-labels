@@ -21,6 +21,9 @@ This action calls the GitHub API to fetch labels for a PR rather than reading `e
 
 If successful, any matching labels will be output in `outputs.labels` as a comma separated string.
 
+> [!TIP]
+> Label matching is **case-insensitive**.
+
 ## Examples
 
 ### Complete example

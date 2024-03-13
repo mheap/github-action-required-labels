@@ -86,11 +86,12 @@ async function action() {
     if (labelsAreRegex) {
       intersection = appliedLabels.filter((appliedLabel) =>
         providedLabels.some((providedLabel) =>
-          new RegExp(providedLabel).test(appliedLabel)
+          new RegExp(providedLabel, 'i').test(appliedLabel)
         )
       );
     } else {
-      intersection = providedLabels.filter((x) => appliedLabels.includes(x));
+      const lowerCasedAppliedLabels = appliedLabels.map((label) => label.toLowerCase());
+      intersection = providedLabels.filter((x) => lowerCasedAppliedLabels.includes(x.toLowerCase()));
     }
 
     // Is there an error?
