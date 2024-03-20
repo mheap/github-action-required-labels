@@ -446,6 +446,36 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "success");
       expect(core.setOutput).toBeCalledWith("labels", "bug");
     });
+
+    it("is case insensitive when matching INPUT_LABELS", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "Do Not Merge",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "1",
+      });
+      mockLabels(["DO NOT MERGE"]);
+
+      await action();
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "Do Not Merge");
+    });
+
+    it("is case insensitive when matching INPUT_LABELS using regex", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "needs .*",
+        INPUT_MODE: "exactly",
+        INPUT_COUNT: "2",
+        INPUT_USE_REGEX: "true",
+      });
+      mockLabels(["Needs Code Review", "Needs QA Review", "Do Not Merge"]);
+
+      await action();
+
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "Needs Code Review,Needs QA Review");
+    });
   });
 
   describe("configurable exit code", () => {
