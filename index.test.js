@@ -474,7 +474,10 @@ describe("Required Labels", () => {
 
       expect(core.setOutput).toBeCalledTimes(2);
       expect(core.setOutput).toBeCalledWith("status", "success");
-      expect(core.setOutput).toBeCalledWith("labels", "Needs Code Review,Needs QA Review");
+      expect(core.setOutput).toBeCalledWith(
+        "labels",
+        "Needs Code Review,Needs QA Review"
+      );
     });
   });
 
