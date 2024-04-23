@@ -44,7 +44,10 @@ jobs:
         with:
           mode: exactly
           count: 1
-          labels: "semver:patch, semver:minor, semver:major"
+          labels: |
+            semver:patch
+            semver:minor
+            semver:major
 ```
 
 ### Prevent merging if a label exists
@@ -68,7 +71,10 @@ You can choose to add a comment to the PR when the action fails. The default for
   with:
     mode: exactly
     count: 1
-    labels: "semver:patch, semver:minor, semver:major"
+    labels: |
+      semver:patch
+      semver:minor
+      semver:major
     add_comment: true
 ```
 
@@ -83,7 +89,10 @@ You can also customise the message used by providing the `message` input:
   with:
     mode: exactly
     count: 1
-    labels: "semver:patch, semver:minor, semver:major"
+    labels: |
+      semver:patch
+      semver:minor
+      semver:major
     add_comment: true
     message: "This PR is being prevented from merging because you have added one of our blocking labels: {{ provided }}. You'll need to remove it before this PR can be merged."
 ```
@@ -105,7 +114,10 @@ The following tokens are available for use in custom messages:
   with:
     mode: minimum
     count: 2
-    labels: "community-reviewed, team-reviewed, codeowner-reviewed"
+    labels: |
+      community-reviewed
+      team-reviewed
+      codeowner-reviewed
 ```
 
 ### Use regular expressions
@@ -134,7 +146,10 @@ You can set `exit_type` to success then inspect `outputs.status` to see if the a
   with:
     mode: minimum
     count: 2
-    labels: "community-reviewed, team-reviewed, codeowner-reviewed"
+    labels: |
+      community-reviewed
+      team-reviewed
+      codeowner-reviewed
     exit_type: success # Can be: success or failure (default: failure)
 ```
 
@@ -161,7 +176,10 @@ jobs:
         with:
           mode: exactly
           count: 1
-          labels: "semver:patch, semver:minor, semver:major"
+          labels: |
+            semver:patch
+            semver:minor
+            semver:major
           exit_type: success
   do-other:
     runs-on: ubuntu-latest
@@ -191,7 +209,10 @@ jobs:
         with:
           mode: minimum
           count: 1
-          labels: "feature-1, feature-2, feature-3"
+          labels: |
+            feature-1
+            feature-2
+            feature-3
       - run: |
           echo "Enabled Features:"
           for f in $(echo "{{steps.check-labels.outputs.labels}}" | sed "s/,/ /g")
