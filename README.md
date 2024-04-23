@@ -8,11 +8,11 @@ This action has three required inputs; `labels`, `mode` and `count`
 
 | Name          | Description                                                                                                                                                  | Required | Default             |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------------------- |
-| `labels`      | New line separated list of labels to match                                                                                                                   | true     |
+| `labels`      | New line separated list of labels to match (legacy support for a comma separated list remains when `use_regex=false`)                                        | true     |
 | `mode`        | The mode of comparison to use. One of: exactly, minimum, maximum                                                                                             | true     |
 | `count`       | The required number of labels to match                                                                                                                       | true     |
 | `token`       | The GitHub token to use when calling the API                                                                                                                 | false    | ${{ github.token }} |
-| `message`     | The message to log and to add to the PR (if add_comment is true). See the README for available placeholders                                                  | false    |
+| `message`     | The message to log and to add to the PR (if `add_comment=true`). See the README for available placeholders                                                   | false    |
 | `add_comment` | Add a comment to the PR if required labels are missing. If a comment already exists, it will be updated. When the action passes, the comment will be deleted | false    | false               |
 | `exit_type`   | The exit type of the action. One of: failure, success                                                                                                        | false    |
 | `use_regex`   | Evaluate the values in `labels` as regular expressions                                                                                                       | false    |
@@ -44,7 +44,10 @@ jobs:
         with:
           mode: exactly
           count: 1
-          labels: "semver:patch, semver:minor, semver:major"
+          labels: |
+            semver:patch
+            semver:minor
+            semver:major
 ```
 
 ### Prevent merging if a label exists
@@ -68,7 +71,10 @@ You can choose to add a comment to the PR when the action fails. The default for
   with:
     mode: exactly
     count: 1
-    labels: "semver:patch, semver:minor, semver:major"
+    labels: |
+      semver:patch
+      semver:minor
+      semver:major
     add_comment: true
 ```
 
@@ -83,7 +89,10 @@ You can also customise the message used by providing the `message` input:
   with:
     mode: exactly
     count: 1
-    labels: "semver:patch, semver:minor, semver:major"
+    labels: |
+      semver:patch
+      semver:minor
+      semver:major
     add_comment: true
     message: "This PR is being prevented from merging because you have added one of our blocking labels: {{ provided }}. You'll need to remove it before this PR can be merged."
 ```
@@ -105,7 +114,10 @@ The following tokens are available for use in custom messages:
   with:
     mode: minimum
     count: 2
-    labels: "community-reviewed, team-reviewed, codeowner-reviewed"
+    labels: |
+      community-reviewed
+      team-reviewed
+      codeowner-reviewed
 ```
 
 ### Use regular expressions
@@ -134,7 +146,10 @@ You can set `exit_type` to success then inspect `outputs.status` to see if the a
   with:
     mode: minimum
     count: 2
-    labels: "community-reviewed, team-reviewed, codeowner-reviewed"
+    labels: |
+      community-reviewed
+      team-reviewed
+      codeowner-reviewed
     exit_type: success # Can be: success or failure (default: failure)
 ```
 
@@ -161,7 +176,10 @@ jobs:
         with:
           mode: exactly
           count: 1
-          labels: "semver:patch, semver:minor, semver:major"
+          labels: |
+            semver:patch
+            semver:minor
+            semver:major
           exit_type: success
   do-other:
     runs-on: ubuntu-latest
@@ -191,7 +209,10 @@ jobs:
         with:
           mode: minimum
           count: 1
-          labels: "feature-1, feature-2, feature-3"
+          labels: |
+            feature-1
+            feature-2
+            feature-3
       - run: |
           echo "Enabled Features:"
           for f in $(echo "{{steps.check-labels.outputs.labels}}" | sed "s/,/ /g")
