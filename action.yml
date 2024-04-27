@@ -9,6 +9,8 @@ branding:
 outputs:
   labels:
     description: "The labels that were matched as a comma separated string"
+  status:
+    description: "The status of the action."
 inputs:
   token:
     description: The GitHub token to use when calling the API
