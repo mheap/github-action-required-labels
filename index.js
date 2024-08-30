@@ -50,8 +50,8 @@ async function action() {
         octokit,
         shouldAddComment,
         `Unknown mode input [${mode}]. Must be one of: ${allowedModes.join(
-          ", "
-        )}`
+          ", ",
+        )}`,
       );
       return;
     }
@@ -63,8 +63,8 @@ async function action() {
         octokit,
         shouldAddComment,
         `Unknown exit_code input [${exitType}]. Must be one of: ${allowedExitCodes.join(
-          ", "
-        )}`
+          ", ",
+        )}`,
       );
       return;
     }
@@ -86,15 +86,15 @@ async function action() {
     if (labelsAreRegex) {
       intersection = appliedLabels.filter((appliedLabel) =>
         providedLabels.some((providedLabel) =>
-          new RegExp(providedLabel, "i").test(appliedLabel)
-        )
+          new RegExp(providedLabel, "i").test(appliedLabel),
+        ),
       );
     } else {
       const lowerCasedAppliedLabels = appliedLabels.map((label) =>
-        label.toLowerCase()
+        label.toLowerCase(),
       );
       intersection = providedLabels.filter((x) =>
-        lowerCasedAppliedLabels.includes(x.toLowerCase())
+        lowerCasedAppliedLabels.includes(x.toLowerCase()),
       );
     }
 
@@ -131,7 +131,7 @@ async function action() {
       });
 
       const generatedComment = existing.find((c) =>
-        c.body.includes(matchToken)
+        c.body.includes(matchToken),
       );
       if (generatedComment) {
         await octokit.rest.issues.deleteComment({
