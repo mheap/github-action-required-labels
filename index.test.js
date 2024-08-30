@@ -41,8 +41,8 @@ describe("Required Labels", () => {
     if (!nock.isDone()) {
       throw new Error(
         `Not all nock interceptors were used: ${JSON.stringify(
-          nock.pendingMocks()
-        )}`
+          nock.pendingMocks(),
+        )}`,
       );
     }
     nock.cleanAll();
@@ -80,7 +80,7 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement. Found: bug"
+        "Label error. Requires exactly 1 of: enhancement. Found: bug",
       );
     });
 
@@ -254,7 +254,7 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug",
       );
     });
 
@@ -273,7 +273,7 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhance.*, bug. Found: enhancement, bug"
+        "Label error. Requires exactly 1 of: enhance.*, bug. Found: enhancement, bug",
       );
     });
 
@@ -292,7 +292,7 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhance.*, bug. Found: enhancement, bug"
+        "Label error. Requires exactly 1 of: enhance.*, bug. Found: enhancement, bug",
       );
     });
 
@@ -310,7 +310,7 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires at least 2 of: enhancement, bug, triage. Found: enhancement"
+        "Label error. Requires at least 2 of: enhancement, bug, triage. Found: enhancement",
       );
     });
 
@@ -327,7 +327,7 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "failure");
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires at most 2 of: enhancement, bug, triage. Found: enhancement, triage, bug"
+        "Label error. Requires at most 2 of: enhancement, bug, triage. Found: enhancement, triage, bug",
       );
     });
   });
@@ -340,7 +340,7 @@ describe("Required Labels", () => {
 
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Input required and not supplied: mode"
+        "Input required and not supplied: mode",
       );
     });
 
@@ -354,7 +354,7 @@ describe("Required Labels", () => {
 
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Input required and not supplied: count"
+        "Input required and not supplied: count",
       );
     });
 
@@ -368,7 +368,7 @@ describe("Required Labels", () => {
 
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Input required and not supplied: labels"
+        "Input required and not supplied: labels",
       );
     });
 
@@ -383,7 +383,7 @@ describe("Required Labels", () => {
 
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Unknown mode input [bananas]. Must be one of: exactly, minimum, maximum"
+        "Unknown mode input [bananas]. Must be one of: exactly, minimum, maximum",
       );
     });
 
@@ -399,7 +399,7 @@ describe("Required Labels", () => {
 
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Unknown exit_code input [other]. Must be one of: success, failure"
+        "Unknown exit_code input [other]. Must be one of: success, failure",
       );
     });
   });
@@ -476,7 +476,7 @@ describe("Required Labels", () => {
       expect(core.setOutput).toBeCalledWith("status", "success");
       expect(core.setOutput).toBeCalledWith(
         "labels",
-        "Needs Code Review,Needs QA Review"
+        "Needs Code Review,Needs QA Review",
       );
     });
   });
@@ -494,7 +494,7 @@ describe("Required Labels", () => {
 
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug",
       );
     });
 
@@ -511,7 +511,7 @@ describe("Required Labels", () => {
 
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug",
       );
     });
 
@@ -528,7 +528,7 @@ describe("Required Labels", () => {
 
       expect(core.warning).toBeCalledTimes(1);
       expect(core.warning).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug",
       );
     });
   });
@@ -547,7 +547,7 @@ describe("Required Labels", () => {
 
       expect(core.setFailed).toBeCalledTimes(1);
       expect(core.setFailed).toBeCalledWith(
-        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug"
+        "Label error. Requires exactly 1 of: enhancement, bug. Found: enhancement, bug",
       );
     });
 
@@ -657,7 +657,7 @@ function mockPr(env) {
         labels: [],
       },
     },
-    env
+    env,
   );
 }
 
@@ -668,7 +668,7 @@ function mockLabels(labels) {
       200,
       labels.map((name) => {
         return { name };
-      })
+      }),
     );
 }
 
@@ -679,7 +679,7 @@ function mockListComments(comments) {
       200,
       comments.map((c) => {
         return { body: c.body, id: c.id };
-      })
+      }),
     );
 }
 
