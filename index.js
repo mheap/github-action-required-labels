@@ -63,10 +63,19 @@ async function action() {
         octokit,
         shouldAddComment,
         `Unknown exit_code input [${exitType}]. Must be one of: ${allowedExitCodes.join(
-          ", ",
-        )}`,
+          ", "
+        )}`
       );
       return;
+    }
+
+    let issue_number = github.context.issue.number;
+
+    if (!issue_number && github.context.eventName == "merge_queue") {
+      // Parse out of the ref for merge queue
+      // e.g. refs/heads/gh-readonly-queue/main/pr-17-a3c310584587d4b97c2df0cb46fe050cc46a15d6
+      const lastPart = github.context.ref.split("/").pop();
+      issue_number = lastPart.match(/pr-(\d+)-/)[1];
     }
 
     // Fetch the labels using the API
@@ -75,7 +84,7 @@ async function action() {
     const labels = (
       await octokit.rest.issues.listLabelsOnIssue({
         ...github.context.repo,
-        issue_number: github.context.issue.number,
+        issue_number,
       })
     ).data;
 
