@@ -644,6 +644,60 @@ describe("Required Labels", () => {
 
       await action();
     });
+
+  });
+
+  describe("merge_queue", () => {
+    it("extracts the PR number from the ref if needed", async () => {
+      restoreTest = mockEvent(
+        "merge_queue",
+        {},
+        {
+          INPUT_LABELS: "enhancement",
+          INPUT_MODE: "exactly",
+          INPUT_COUNT: "1",
+          GITHUB_TOKEN: "mock-token-here-abc",
+        },
+        {
+          ref: "refs/heads/gh-readonly-queue/main/pr-28-a3c310584587d4b97c2df0cb46fe050cc46a15d6"
+        },
+      );
+
+      mockLabels(["enhancement", "bug"]);
+
+      await action();
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement");
+    });
+
+    it("prefers the issue number that is set in the payload to extracting from a ref", async () => {
+      restoreTest = mockEvent(
+        "merge_queue",
+        {
+          issue: {
+            number: 28,
+          },
+        },
+        {
+          INPUT_LABELS: "enhancement",
+          INPUT_MODE: "exactly",
+          INPUT_COUNT: "1",
+          GITHUB_TOKEN: "mock-token-here-abc",
+        },
+        {
+          // This would lead to an error as there are no mocks for PR 999
+          ref: "refs/heads/gh-readonly-queue/main/pr-999-a3c310584587d4b97c2df0cb46fe050cc46a15d6"
+        },
+      );
+
+      mockLabels(["enhancement", "bug"]);
+
+      await action();
+      expect(core.setOutput).toBeCalledTimes(2);
+      expect(core.setOutput).toBeCalledWith("status", "success");
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement");
+    });
   });
 });
 
@@ -683,8 +737,13 @@ function mockListComments(comments) {
     );
 }
 
-function mockEvent(eventName, mockPayload, additionalParams = {}) {
+function mockEvent(eventName, mockPayload, additionalParams, additionalContext = {}) {
   github.context.payload = mockPayload;
+  github.context.eventName = eventName;
+
+  for (const key in additionalContext) {
+    github.context[key] = additionalContext[key];
+  }
 
   const params = {
     GITHUB_EVENT_NAME: eventName,
