@@ -27,6 +27,7 @@ async function action() {
 
     let providedLabels = core.getInput("labels", { required: true });
 
+    core.debug(`gather labels: ${providedLabels}`);
     if (labelsAreRegex) {
       // If labels are regex they must be provided as new line delimited
       providedLabels = providedLabels.split("\n");
@@ -81,7 +82,7 @@ async function action() {
       return;
     }
 
-    // Fetch the labels using the API
+    core.debug(`fetch the labels using the API`);
     // We use the API rather than read event.json in case earlier steps
     // added a label
     const labels = (
@@ -110,7 +111,7 @@ async function action() {
       );
     }
 
-    // Is there an error?
+    core.debug(`detect errors...`);
     let errorMode;
     if (mode === "exactly" && intersection.length !== count) {
       errorMode = "exactly";
@@ -120,7 +121,7 @@ async function action() {
       errorMode = "at most";
     }
 
-    // If so, add a comment (if enabled) and fail the run
+    core.debug(`if so, add a comment (if enabled) and fail the run...`);
     if (errorMode !== undefined) {
       const comment = core.getInput("message");
       const errorMessage = tmpl(comment, {
@@ -135,7 +136,7 @@ async function action() {
       return;
     }
 
-    // Remove the comment if it exists
+    core.debug(`remove the comment if it exists...`);
     if (shouldAddComment) {
       const { data: existing } = await octokit.rest.issues.listComments({
         ...github.context.repo,
