@@ -43,6 +43,15 @@ async function action() {
     // Remove any empty labels
     providedLabels = providedLabels.filter((r) => r);
 
+    let issue_number = github.context.issue.number;
+
+    if (!issue_number && github.context.eventName == "merge_queue") {
+      // Parse out of the ref for merge queue
+      // e.g. refs/heads/gh-readonly-queue/main/pr-17-a3c310584587d4b97c2df0cb46fe050cc46a15d6
+      const lastPart = github.context.ref.split("/").pop();
+      issue_number = lastPart.match(/pr-(\d+)-/)[1];
+    }
+
     const allowedModes = ["exactly", "minimum", "maximum"];
     if (!allowedModes.includes(mode)) {
       await exitWithError(
@@ -52,6 +61,7 @@ async function action() {
         `Unknown mode input [${mode}]. Must be one of: ${allowedModes.join(
           ", ",
         )}`,
+        issue_number,
       );
       return;
     }
@@ -64,18 +74,10 @@ async function action() {
         shouldAddComment,
         `Unknown exit_code input [${exitType}]. Must be one of: ${allowedExitCodes.join(
           ", "
-        )}`
+        )}`,
+        issue_number,
       );
       return;
-    }
-
-    let issue_number = github.context.issue.number;
-
-    if (!issue_number && github.context.eventName == "merge_queue") {
-      // Parse out of the ref for merge queue
-      // e.g. refs/heads/gh-readonly-queue/main/pr-17-a3c310584587d4b97c2df0cb46fe050cc46a15d6
-      const lastPart = github.context.ref.split("/").pop();
-      issue_number = lastPart.match(/pr-(\d+)-/)[1];
     }
 
     // Fetch the labels using the API
@@ -128,7 +130,7 @@ async function action() {
         applied: appliedLabels.join(", "),
       });
 
-      await exitWithError(exitType, octokit, shouldAddComment, errorMessage);
+      await exitWithError(exitType, octokit, shouldAddComment, errorMessage, issue_number);
       return;
     }
 
@@ -136,7 +138,7 @@ async function action() {
     if (shouldAddComment) {
       const { data: existing } = await octokit.rest.issues.listComments({
         ...github.context.repo,
-        issue_number: github.context.issue.number,
+        issue_number: issue_number,
       });
 
       const generatedComment = existing.find((c) =>
@@ -163,19 +165,19 @@ function tmpl(t, o) {
   });
 }
 
-async function exitWithError(exitType, octokit, shouldAddComment, message) {
+async function exitWithError(exitType, octokit, shouldAddComment, message, issue_number) {
   if (shouldAddComment) {
     // Is there an existing comment?
     const { data: existing } = await octokit.rest.issues.listComments({
       ...github.context.repo,
-      issue_number: github.context.issue.number,
+      issue_number: issue_number,
     });
 
     const generatedComment = existing.find((c) => c.body.includes(matchToken));
 
     const params = {
       ...github.context.repo,
-      issue_number: github.context.issue.number,
+      issue_number: issue_number,
       body: `${matchToken}${message}`,
     };
 
