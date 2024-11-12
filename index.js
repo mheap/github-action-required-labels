@@ -46,7 +46,7 @@ async function action() {
 
     let issue_number = github.context.issue.number;
 
-    if (!issue_number && github.context.eventName == "merge_queue") {
+    if (github.context.eventName == "merge_queue") {
       // Parse out of the ref for merge queue
       // e.g. refs/heads/gh-readonly-queue/main/pr-17-a3c310584587d4b97c2df0cb46fe050cc46a15d6
       const lastPart = github.context.ref.split("/").pop();
@@ -82,7 +82,7 @@ async function action() {
       return;
     }
 
-    core.debug(`fetch the labels using the API`);
+    core.debug(`fetch the labels for ${issue_number} using the API`);
     // We use the API rather than read event.json in case earlier steps
     // added a label
     const labels = (
