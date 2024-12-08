@@ -31,6 +31,7 @@ describe("Required Labels", () => {
     core.setOutput = jest.fn();
     core.warning = jest.fn();
     core.setFailed = jest.fn();
+    core.debug = jest.fn();
   });
 
   afterEach(() => {
@@ -644,13 +645,12 @@ describe("Required Labels", () => {
 
       await action();
     });
-
   });
 
-  describe("merge_queue", () => {
+  describe("merge_group", () => {
     it("extracts the PR number from the ref if needed", async () => {
       restoreTest = mockEvent(
-        "merge_queue",
+        "merge_group",
         {},
         {
           INPUT_LABELS: "enhancement",
@@ -673,7 +673,7 @@ describe("Required Labels", () => {
 
     it("prefers the issue number that is set in the payload to extracting from a ref", async () => {
       restoreTest = mockEvent(
-        "merge_queue",
+        "merge_group",
         {
           issue: {
             number: 28,
