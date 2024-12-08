@@ -51,7 +51,9 @@ async function action() {
       // e.g. refs/heads/gh-readonly-queue/main/pr-17-a3c310584587d4b97c2df0cb46fe050cc46a15d6
       const lastPart = github.context.ref.split("/").pop();
       issue_number = lastPart.match(/pr-(\d+)-/)[1];
-      core.info(`merge_group event detected and issue_number parsed as ${issue_number}`);
+      core.info(
+        `merge_group event detected and issue_number parsed as ${issue_number}`,
+      );
     }
 
     const allowedModes = ["exactly", "minimum", "maximum"];
@@ -75,7 +77,7 @@ async function action() {
         octokit,
         shouldAddComment,
         `Unknown exit_code input [${exitType}]. Must be one of: ${allowedExitCodes.join(
-          ", "
+          ", ",
         )}`,
         issue_number,
       );
@@ -132,7 +134,13 @@ async function action() {
         applied: appliedLabels.join(", "),
       });
 
-      await exitWithError(exitType, octokit, shouldAddComment, errorMessage, issue_number);
+      await exitWithError(
+        exitType,
+        octokit,
+        shouldAddComment,
+        errorMessage,
+        issue_number,
+      );
       return;
     }
 
@@ -167,7 +175,13 @@ function tmpl(t, o) {
   });
 }
 
-async function exitWithError(exitType, octokit, shouldAddComment, message, issue_number) {
+async function exitWithError(
+  exitType,
+  octokit,
+  shouldAddComment,
+  message,
+  issue_number,
+) {
   if (shouldAddComment) {
     // Is there an existing comment?
     const { data: existing } = await octokit.rest.issues.listComments({

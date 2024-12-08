@@ -659,7 +659,7 @@ describe("Required Labels", () => {
           GITHUB_TOKEN: "mock-token-here-abc",
         },
         {
-          ref: "refs/heads/gh-readonly-queue/main/pr-28-a3c310584587d4b97c2df0cb46fe050cc46a15d6"
+          ref: "refs/heads/gh-readonly-queue/main/pr-28-a3c310584587d4b97c2df0cb46fe050cc46a15d6",
         },
       );
 
@@ -687,7 +687,7 @@ describe("Required Labels", () => {
         },
         {
           // This would lead to an error as there are no mocks for PR 999
-          ref: "refs/heads/gh-readonly-queue/main/pr-999-a3c310584587d4b97c2df0cb46fe050cc46a15d6"
+          ref: "refs/heads/gh-readonly-queue/main/pr-999-a3c310584587d4b97c2df0cb46fe050cc46a15d6",
         },
       );
 
@@ -737,7 +737,12 @@ function mockListComments(comments) {
     );
 }
 
-function mockEvent(eventName, mockPayload, additionalParams, additionalContext = {}) {
+function mockEvent(
+  eventName,
+  mockPayload,
+  additionalParams,
+  additionalContext = {},
+) {
   github.context.payload = mockPayload;
   github.context.eventName = eventName;
 
