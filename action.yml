@@ -1,41 +1,45 @@
 name: Require Labels
 description: Require labels to be added to a pull request before merging
 runs:
-  using: docker
-  image: Dockerfile
+  using: node20
+  main: dist/index.js
 branding:
   icon: check-square
   color: blue
 outputs:
   labels:
-    description: "The labels that were matched as a comma separated string"
+    description: The labels that were matched as a comma separated string
   status:
-    description: "The status of the action."
+    description: The status of the action.
 inputs:
   token:
     description: The GitHub token to use when calling the API
     default: ${{ github.token }}
     required: false
   labels:
-    description: "Comma or new line separated list of labels to match"
+    description: Comma or new line separated list of labels to match
     required: true
   mode:
-    description: "The mode of comparison to use. One of: exactly, minimum, maximum"
+    description: 'The mode of comparison to use. One of: exactly, minimum, maximum'
     required: true
   count:
-    description: "The required number of labels to match"
+    description: The required number of labels to match
     required: true
   message:
-    description: "The message to log and to add to the PR (if add_comment is true). See the README for available placeholders"
-    default: "Label error. Requires {{errorString}} {{count}} of: {{ provided }}. Found: {{ applied }}"
+    description: >-
+      The message to log and to add to the PR (if add_comment is true). See the
+      README for available placeholders
+    default: >-
+      Label error. Requires {{errorString}} {{count}} of: {{ provided }}. Found:
+      {{ applied }}
     required: false
   add_comment:
-    description: "Add a comment to the PR if required labels are missing"
-    default: "false"
+    description: Add a comment to the PR if required labels are missing
+    default: 'false'
     required: false
   exit_type:
-    description: "The exit type of the action. One of: failure, success"
+    description: 'The exit type of the action. One of: failure, success'
     required: false
   use_regex:
     description: Evaluate the values in `labels` as regular expressions
-    default: "false"
+    default: 'false'
