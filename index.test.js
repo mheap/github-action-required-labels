@@ -125,6 +125,40 @@ describe("Required Labels", () => {
 
       await action();
     });
+
+    it("fetches all label pages from the API", async () => {
+      restoreTest = mockPr({
+        INPUT_LABELS: "enhancement",
+        INPUT_MODE: "minimum",
+        INPUT_COUNT: "1",
+        GITHUB_TOKEN: "mock-token-here-abc",
+      });
+
+      // First page of labels
+      nock("https://api.github.com")
+        .get("/repos/mheap/missing-repo/issues/28/labels")
+        .reply(200, [{ name: "triage" }], {
+          Link: '<https://api.github.com/repos/mheap/missing-repo/issues/28/labels?page=2>; rel="next"',
+        });
+
+      // Second page of labels
+      nock("https://api.github.com")
+        .get("/repos/mheap/missing-repo/issues/28/labels")
+        .query({ page: 2 })
+        .reply(200, [{ name: "bug" }], {
+          Link: '<https://api.github.com/repos/mheap/missing-repo/issues/28/labels?page=3>; rel="next"',
+        });
+
+      // Third page of labels
+      nock("https://api.github.com")
+        .get("/repos/mheap/missing-repo/issues/28/labels")
+        .query({ page: 3 })
+        .reply(200, [{ name: "enhancement" }]);
+
+      await action();
+      expect(core.setOutput).toBeCalledWith("labels", "enhancement");
+      expect(core.setOutput).toBeCalledWith("status", "success");
+    });
   });
 
   describe("success", () => {
