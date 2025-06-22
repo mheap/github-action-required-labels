@@ -87,12 +87,14 @@ async function action() {
     core.debug(`fetch the labels for ${issue_number} using the API`);
     // We use the API rather than read event.json in case earlier steps
     // added a label
-    const labels = (
-      await octokit.rest.issues.listLabelsOnIssue({
+    // Use octokit.paginate to fetch all pages of labels
+    const labels = await octokit.paginate(
+      octokit.rest.issues.listLabelsOnIssue,
+      {
         ...github.context.repo,
         issue_number,
-      })
-    ).data;
+      },
+    );
 
     const appliedLabels = labels.map((label) => label.name);
 
