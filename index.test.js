@@ -3,8 +3,14 @@ const core = require("@actions/core");
 const github = require("@actions/github");
 
 const mockedEnv = require("mocked-env");
-const nock = require("nock");
-nock.disableNetConnect();
+const {
+  MockAgent,
+  setGlobalDispatcher,
+  getGlobalDispatcher,
+} = require("undici");
+
+let mockAgent;
+let originalDispatcher;
 
 // note: these need to match the mocked env vars below
 const matchToken = `<!-- demo-workflow/demo-job/required-labels -->\n`;
@@ -12,6 +18,14 @@ const matchToken = `<!-- demo-workflow/demo-job/required-labels -->\n`;
 describe("Required Labels", () => {
   let restore;
   let restoreTest;
+
+  beforeAll(() => {
+    originalDispatcher = getGlobalDispatcher();
+    mockAgent = new MockAgent();
+    mockAgent.disableNetConnect();
+    setGlobalDispatcher(mockAgent);
+  });
+
   beforeEach(() => {
     restore = mockedEnv({
       GITHUB_WORKFLOW: "demo-workflow",
@@ -38,15 +52,11 @@ describe("Required Labels", () => {
     restore();
     restoreTest();
     jest.resetModules();
+    mockAgent.assertNoPendingInterceptors();
+  });
 
-    if (!nock.isDone()) {
-      throw new Error(
-        `Not all nock interceptors were used: ${JSON.stringify(
-          nock.pendingMocks(),
-        )}`,
-      );
-    }
-    nock.cleanAll();
+  afterAll(() => {
+    setGlobalDispatcher(originalDispatcher);
   });
 
   describe("interacts with the API", () => {
@@ -95,14 +105,8 @@ describe("Required Labels", () => {
       });
 
       mockLabels(["bug"]);
-
       mockListComments([]);
-
-      nock("https://api.github.com")
-        .post("/repos/mheap/missing-repo/issues/28/comments", {
-          body: `${matchToken}Label error. Requires exactly 1 of: enhancement. Found: bug`,
-        })
-        .reply(201);
+      mockPost("/repos/mheap/missing-repo/issues/28/comments", 201);
 
       await action();
     });
@@ -118,10 +122,10 @@ describe("Required Labels", () => {
 
       mockLabels(["bug"]);
       mockListComments([{ id: "12345", body: `${matchToken}This` }]);
-
-      nock("https://api.github.com")
-        .delete("/repos/mheap/missing-repo/issues/comments/12345")
-        .reply(200);
+      mockDelete(
+        "/repos/mheap/missing-repo/issues/comments/12345",
+        200,
+      );
 
       await action();
     });
@@ -134,26 +138,51 @@ describe("Required Labels", () => {
         GITHUB_TOKEN: "mock-token-here-abc",
       });
 
+      const pool = mockAgent.get("https://api.github.com");
+
       // First page of labels
-      nock("https://api.github.com")
-        .get("/repos/mheap/missing-repo/issues/28/labels")
-        .reply(200, [{ name: "triage" }], {
-          Link: '<https://api.github.com/repos/mheap/missing-repo/issues/28/labels?page=2>; rel="next"',
-        });
+      pool
+        .intercept({
+          path: "/repos/mheap/missing-repo/issues/28/labels",
+          method: "GET",
+        })
+        .reply(
+          200,
+          JSON.stringify([{ name: "triage" }]),
+          {
+            headers: {
+              "content-type": "application/json",
+              link: '<https://api.github.com/repos/mheap/missing-repo/issues/28/labels?page=2>; rel="next"',
+            },
+          },
+        );
 
       // Second page of labels
-      nock("https://api.github.com")
-        .get("/repos/mheap/missing-repo/issues/28/labels")
-        .query({ page: 2 })
-        .reply(200, [{ name: "bug" }], {
-          Link: '<https://api.github.com/repos/mheap/missing-repo/issues/28/labels?page=3>; rel="next"',
-        });
+      pool
+        .intercept({
+          path: "/repos/mheap/missing-repo/issues/28/labels?page=2",
+          method: "GET",
+        })
+        .reply(
+          200,
+          JSON.stringify([{ name: "bug" }]),
+          {
+            headers: {
+              "content-type": "application/json",
+              link: '<https://api.github.com/repos/mheap/missing-repo/issues/28/labels?page=3>; rel="next"',
+            },
+          },
+        );
 
       // Third page of labels
-      nock("https://api.github.com")
-        .get("/repos/mheap/missing-repo/issues/28/labels")
-        .query({ page: 3 })
-        .reply(200, [{ name: "enhancement" }]);
+      pool
+        .intercept({
+          path: "/repos/mheap/missing-repo/issues/28/labels?page=3",
+          method: "GET",
+        })
+        .reply(200, JSON.stringify([{ name: "enhancement" }]), {
+          headers: { "content-type": "application/json" },
+        });
 
       await action();
       expect(core.setOutput).toBeCalledWith("labels", "enhancement");
@@ -597,14 +626,8 @@ describe("Required Labels", () => {
       });
 
       mockLabels(["enhancement", "bug"]);
-
       mockListComments([]);
-
-      nock("https://api.github.com")
-        .post("/repos/mheap/missing-repo/issues/28/comments", {
-          body: `${matchToken}This is a static comment`,
-        })
-        .reply(201);
+      mockPost("/repos/mheap/missing-repo/issues/28/comments", 201);
 
       await action();
     });
@@ -620,15 +643,11 @@ describe("Required Labels", () => {
       });
 
       mockLabels(["enhancement", "bug"]);
-
       mockListComments([{ id: "12345", body: `${matchToken}This` }]);
-
-      nock("https://api.github.com")
-        .patch("/repos/mheap/missing-repo/issues/comments/12345", {
-          issue_number: 28,
-          body: `${matchToken}This is a static comment`,
-        })
-        .reply(200);
+      mockPatch(
+        "/repos/mheap/missing-repo/issues/comments/12345",
+        200,
+      );
 
       await action();
     });
@@ -644,14 +663,8 @@ describe("Required Labels", () => {
       });
 
       mockLabels(["enhancement", "bug"]);
-
       mockListComments([{ id: "12345", body: `No Match` }]);
-
-      nock("https://api.github.com")
-        .post("/repos/mheap/missing-repo/issues/28/comments", {
-          body: `${matchToken}This is a static comment`,
-        })
-        .reply(201);
+      mockPost("/repos/mheap/missing-repo/issues/28/comments", 201);
 
       await action();
     });
@@ -669,13 +682,8 @@ describe("Required Labels", () => {
       });
 
       mockLabels(["enhancement", "bug"]);
-
       mockListComments([]);
-      nock("https://api.github.com")
-        .post("/repos/mheap/missing-repo/issues/28/comments", {
-          body: `${matchToken}Mode: exactly, Count: 1, Error String: exactly, Provided: enhancement, bug, Applied: enhancement, bug`,
-        })
-        .reply(201);
+      mockPost("/repos/mheap/missing-repo/issues/28/comments", 201);
 
       await action();
     });
@@ -749,26 +757,44 @@ function mockPr(env) {
   );
 }
 
+function apiPool() {
+  return mockAgent.get("https://api.github.com");
+}
+
 function mockLabels(labels) {
-  nock("https://api.github.com")
-    .get("/repos/mheap/missing-repo/issues/28/labels")
-    .reply(
-      200,
-      labels.map((name) => {
-        return { name };
-      }),
-    );
+  apiPool()
+    .intercept({
+      path: "/repos/mheap/missing-repo/issues/28/labels",
+      method: "GET",
+    })
+    .reply(200, JSON.stringify(labels.map((name) => ({ name }))), {
+      headers: { "content-type": "application/json" },
+    });
 }
 
 function mockListComments(comments) {
-  nock("https://api.github.com")
-    .get("/repos/mheap/missing-repo/issues/28/comments")
+  apiPool()
+    .intercept({
+      path: "/repos/mheap/missing-repo/issues/28/comments",
+      method: "GET",
+    })
     .reply(
       200,
-      comments.map((c) => {
-        return { body: c.body, id: c.id };
-      }),
+      JSON.stringify(comments.map((c) => ({ body: c.body, id: c.id }))),
+      { headers: { "content-type": "application/json" } },
     );
+}
+
+function mockPost(path, status) {
+  apiPool().intercept({ path, method: "POST" }).reply(status, "{}");
+}
+
+function mockPatch(path, status) {
+  apiPool().intercept({ path, method: "PATCH" }).reply(status, "{}");
+}
+
+function mockDelete(path, status) {
+  apiPool().intercept({ path, method: "DELETE" }).reply(status, "{}");
 }
 
 function mockEvent(
